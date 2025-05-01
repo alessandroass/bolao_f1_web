@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Registro - Bolão F1</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style_login.css') }}">
+</head>
+<body class="registro-page">
+    <div class="container">
+        <h1 class="titulo">🏎️ REGISTRO BOLÃO F1 🏎️</h1>
+        
+        <form method="POST" class="form-login">
+            <div class="input-group">
+                <label>Primeiro Nome</label>
+                <input type="text" name="first_name" required>
+            </div>
+
+            <div class="input-group">
+                <label>Login</label>
+                <input type="text" name="username" required>
+            </div>
+            
+            <div class="input-group">
+                <label>Senha</label>
+                <input type="password" name="password" required>
+            </div>
+
+            <div class="input-group">
+                <label>Confirme a Senha</label>
+                <input type="password" name="confirm_password" required>
+            </div>
+
+            <div class="botoes">
+                <button type="submit" class="login-btn">Registrar</button>
+                <a href="/login" class="registro-btn">Voltar para Login</a>
+            </div>
+        </form>
+    </div>
+</body>
+</html> 

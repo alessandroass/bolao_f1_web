@@ -1,0 +1,394 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciar Pilotos - Bolão F1 2025{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header">
+        <h1 class="title">Gerenciar Pilotos</h1>
+        <a href="{{ url_for('admin') }}" class="back-button">Voltar</a>
+    </div>
+    
+    <div class="admin-section">
+        <div class="add-piloto">
+            <h2>Adicionar Novo Piloto</h2>
+            <form method="POST" class="form">
+                <div class="form-group">
+                    <input type="text" name="novo_piloto" placeholder="Nome do piloto" required>
+                    <button type="submit" class="add-button">Adicionar</button>
+                </div>
+            </form>
+        </div>
+        
+        <div class="pilotos-list">
+            <h2>Pilotos Cadastrados</h2>
+            {% if pilotos %}
+            <div class="pilotos-grid">
+                {% for piloto in pilotos %}
+                <div class="piloto-card">
+                    <span>{{ piloto }}</span>
+                    <form method="POST" class="delete-form">
+                        <input type="hidden" name="piloto" value="{{ piloto }}">
+                        <button type="submit" class="delete-button">Excluir</button>
+                    </form>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="no-pilotos">
+                <p>Nenhum piloto cadastrado.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div id="popup" class="popup {% if get_flashed_messages() %}show{% endif %}">
+    <div class="popup-content">
+        <span class="close-popup">&times;</span>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <p class="popup-message {{ category }}">{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+</div>
+
+<div id="confirm-popup" class="popup">
+    <div class="popup-content">
+        <span class="close-popup">&times;</span>
+        <p class="popup-message" id="confirm-message"></p>
+        <div class="popup-buttons">
+            <button class="confirm-button" id="confirm-yes">Sim</button>
+            <button class="confirm-button" id="confirm-no">Não</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.admin-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.title {
+    color: #e10600;
+    font-family: 'Formula1', sans-serif;
+    margin: 0;
+}
+
+.back-button {
+    padding: 10px 20px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    text-decoration: none;
+    border-radius: 5px;
+    border: 1px solid #e10600;
+    transition: all 0.3s ease;
+    font-family: 'Formula1', sans-serif;
+}
+
+.back-button:hover {
+    background: rgba(225, 6, 0, 0.2);
+    transform: translateY(-2px);
+}
+
+.admin-section {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 30px;
+}
+
+.admin-section h2 {
+    color: #e10600;
+    font-family: 'Formula1', sans-serif;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(225, 6, 0, 0.3);
+}
+
+.admin-form {
+    margin-bottom: 20px;
+}
+
+.form-group {
+    display: flex;
+    gap: 15px;
+    align-items: flex-end;
+}
+
+.form-group label {
+    display: block;
+    color: #fff;
+    margin-bottom: 5px;
+}
+
+.form-group input {
+    flex: 1;
+    padding: 10px;
+    border-radius: 5px;
+    border: none;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-family: 'Formula1', sans-serif;
+}
+
+.submit-button {
+    padding: 10px 20px;
+    background: #e10600;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Formula1', sans-serif;
+}
+
+.submit-button:hover {
+    background: #b80000;
+    transform: translateY(-2px);
+}
+
+.pilotos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.piloto-card {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 15px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.piloto-card span {
+    color: #fff;
+    flex: 1;
+    margin-right: 10px;
+}
+
+.delete-form {
+    margin: 0;
+}
+
+.delete-button {
+    padding: 8px 16px;
+    background: rgba(255, 0, 0, 0.2);
+    color: #fff;
+    border: 1px solid #ff0000;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Formula1', sans-serif;
+    white-space: nowrap;
+}
+
+.delete-button:hover {
+    background: rgba(255, 0, 0, 0.3);
+}
+
+.no-pilotos {
+    color: #fff;
+    text-align: center;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+}
+
+@media (max-width: 768px) {
+    .admin-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+
+    .form-group {
+        flex-direction: column;
+    }
+    
+    .pilotos-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .piloto-card {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+    
+    .piloto-card span {
+        margin-right: 0;
+    }
+}
+
+.popup {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.9);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+    z-index: 1000;
+    width: 80%;
+    max-width: 400px;
+}
+
+.popup.show {
+    display: block;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.popup-content {
+    position: relative;
+    text-align: center;
+}
+
+.close-popup {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    font-size: 24px;
+    cursor: pointer;
+    color: white;
+}
+
+.popup-message {
+    font-family: 'Formula1', sans-serif;
+    font-size: 1.2em;
+    color: white;
+    margin: 20px 0;
+}
+
+.popup-message.success {
+    color: #00ff00;
+}
+
+.popup-message.error {
+    color: #ff0000;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.popup-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.confirm-button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: 'Formula1', sans-serif;
+    transition: all 0.3s ease;
+}
+
+#confirm-yes {
+    background: #e10600;
+    color: white;
+}
+
+#confirm-yes:hover {
+    background: #b80000;
+}
+
+#confirm-no {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid #e10600;
+}
+
+#confirm-no:hover {
+    background: rgba(225, 6, 0, 0.2);
+}
+
+.add-button {
+    padding: 10px 20px;
+    background: #e10600;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Formula1', sans-serif;
+}
+
+.add-button:hover {
+    background: #b80000;
+    transform: translateY(-2px);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const popup = document.getElementById('popup');
+    const confirmPopup = document.getElementById('confirm-popup');
+    const closePopup = document.querySelector('.close-popup');
+    const confirmMessage = document.getElementById('confirm-message');
+    const confirmYes = document.getElementById('confirm-yes');
+    const confirmNo = document.getElementById('confirm-no');
+    
+    let currentForm = null;
+    
+    // Fecha o popup após 3 segundos
+    if (popup.classList.contains('show')) {
+        setTimeout(() => {
+            popup.classList.remove('show');
+        }, 3000);
+    }
+    
+    // Fecha o popup ao clicar no X
+    closePopup.addEventListener('click', () => {
+        popup.classList.remove('show');
+        confirmPopup.classList.remove('show');
+    });
+    
+    // Confirmação antes de excluir piloto
+    const deleteForms = document.querySelectorAll('.delete-form');
+    deleteForms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            currentForm = this;
+            
+            const piloto = this.querySelector('input[name="piloto"]').value;
+            confirmMessage.textContent = `Tem certeza que deseja excluir o piloto ${piloto}?`;
+            confirmPopup.classList.add('show');
+        });
+    });
+    
+    // Ações dos botões de confirmação
+    confirmYes.addEventListener('click', () => {
+        if (currentForm) {
+            currentForm.submit();
+        }
+        confirmPopup.classList.remove('show');
+    });
+    
+    confirmNo.addEventListener('click', () => {
+        confirmPopup.classList.remove('show');
+    });
+});
+</script>
+{% endblock %} 

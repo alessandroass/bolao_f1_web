@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciar GPs - Bolão F1 2025{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header">
+        <h1 class="title">Gerenciar GPs</h1>
+        <a href="{{ url_for('admin') }}" class="back-button">Voltar</a>
+    </div>
+    
+    <div class="admin-section">
+        <div class="add-gp">
+            <h2>Adicionar Novo GP</h2>
+            <form method="POST" class="add-form">
+                <input type="hidden" name="action" value="add">
+                <div class="form-group">
+                    <label for="nome">Nome do GP:</label>
+                    <input type="text" id="nome" name="nome" required>
+                </div>
+                <div class="form-group">
+                    <label for="data">Data:</label>
+                    <input type="date" id="data" name="data" required>
+                </div>
+                <button type="submit" class="add-button">Adicionar GP</button>
+            </form>
+        </div>
+
+        <div class="gps-list">
+            <h2>GPs Cadastrados</h2>
+            <div class="gps-grid">
+                {% for gp in gps %}
+                <div class="gp-card">
+                    <div class="gp-info">
+                        <span class="gp-name">{{ gp.nome }}</span>
+                        <span class="gp-date">{{ gp.data }}</span>
+                    </div>
+                    <div class="gp-actions">
+                        <form method="POST" class="action-form">
+                            <input type="hidden" name="gp_id" value="{{ gp.id }}">
+                            <input type="hidden" name="action" value="delete">
+                            <button type="submit" class="action-button delete-button" onclick="return confirm('Tem certeza que deseja excluir este GP?')">
+                                Excluir
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.admin-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.title {
+    color: #e10600;
+    font-family: 'Formula1', sans-serif;
+    margin: 0;
+}
+
+.back-button {
+    padding: 10px 20px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    text-decoration: none;
+    border-radius: 5px;
+    border: 1px solid #e10600;
+    transition: all 0.3s ease;
+    font-family: 'Formula1', sans-serif;
+}
+
+.back-button:hover {
+    background: rgba(225, 6, 0, 0.2);
+    transform: translateY(-2px);
+}
+
+.admin-section {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.add-gp, .gps-list {
+    margin-bottom: 30px;
+}
+
+.add-gp h2, .gps-list h2 {
+    color: #e10600;
+    font-family: 'Formula1', sans-serif;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(225, 6, 0, 0.3);
+}
+
+.add-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 15px;
+    align-items: end;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.form-group label {
+    color: #fff;
+    font-size: 0.9em;
+}
+
+.form-group input {
+    padding: 8px;
+    border-radius: 5px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.add-button {
+    padding: 8px 20px;
+    background: rgba(0, 128, 0, 0.2);
+    color: #fff;
+    border: 1px solid #008000;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Formula1', sans-serif;
+}
+
+.add-button:hover {
+    background: rgba(0, 128, 0, 0.3);
+}
+
+.gps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 15px;
+}
+
+.gp-card {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.gp-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.gp-name {
+    color: #fff;
+    font-weight: bold;
+}
+
+.gp-date {
+    color: #aaa;
+    font-size: 0.9em;
+}
+
+.gp-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.action-form {
+    margin: 0;
+}
+
+.action-button {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Formula1', sans-serif;
+}
+
+.delete-button {
+    background: rgba(255, 0, 0, 0.2);
+    color: #fff;
+    border: 1px solid #ff0000;
+}
+
+.delete-button:hover {
+    background: rgba(255, 0, 0, 0.3);
+}
+
+@media (max-width: 768px) {
+    .admin-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .add-form {
+        grid-template-columns: 1fr;
+    }
+    
+    .gps-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %} 

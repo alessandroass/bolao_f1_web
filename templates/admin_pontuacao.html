@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+
+{% block title %}Configurar Pontuação - Bolão F1 2025{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header">
+        <h1 class="title">Configurar Pontuação</h1>
+        <a href="{{ url_for('admin') }}" class="back-button">Voltar</a>
+    </div>
+    
+    <div class="admin-section">
+        <form method="POST" class="pontuacao-form">
+            <div class="pontuacao-grid">
+                <div class="pontuacao-item">
+                    <label>Pole Position</label>
+                    <input type="number" name="pontos_0" value="{{ pontuacao.get(0, 5) }}" min="0" required>
+                </div>
+                {% for i in range(1, 11) %}
+                <div class="pontuacao-item">
+                    <label>{{ i }}º Lugar</label>
+                    <input type="number" name="pontos_{{ i }}" value="{{ pontuacao.get(i, 0) }}" min="0" required>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div class="botoes">
+                <button type="submit" class="save-button">Salvar Pontuação</button>
+                <a href="{{ url_for('admin') }}" class="cancel-button">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="popup" class="popup {% if get_flashed_messages() %}show{% endif %}">
+    <div class="popup-content">
+        <span class="close-popup">&times;</span>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <p class="popup-message {{ category }}">{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+</div>
+
+<style>
+.admin-container {
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 10px;
+    box-sizing: border-box;
+    overflow-x: hidden;
+}
+
+.admin-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.title {
+    color: #e10600;
+    margin-bottom: 15px;
+    font-family: 'Formula1', sans-serif;
+    font-size: 1.5em;
+}
+
+.pontuacao-form {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.pontuacao-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.pontuacao-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pontuacao-item label {
+    color: #fff;
+    font-size: 0.9em;
+    text-align: center;
+}
+
+.pontuacao-item input {
+    padding: 8px;
+    border-radius: 5px;
+    border: none;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-size: 0.9em;
+    text-align: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.pontuacao-item input:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.botoes {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.save-button, .cancel-button {
+    padding: 12px 20px;
+    border-radius: 5px;
+    font-size: 1em;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Formula1', sans-serif;
+    text-decoration: none;
+    text-align: center;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.save-button {
+    background: #e10600;
+    color: #fff;
+    border: none;
+}
+
+.save-button:hover {
+    background: #b80000;
+    transform: translateY(-2px);
+}
+
+.cancel-button {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border: 1px solid #e10600;
+}
+
+.cancel-button:hover {
+    background: rgba(225, 6, 0, 0.2);
+    transform: translateY(-2px);
+}
+
+.popup {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.9);
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+    z-index: 1000;
+    width: 90%;
+    max-width: 400px;
+}
+
+.popup.show {
+    display: block;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.popup-content {
+    position: relative;
+    text-align: center;
+}
+
+.close-popup {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    font-size: 20px;
+    cursor: pointer;
+    color: white;
+}
+
+.popup-message {
+    font-family: 'Formula1', sans-serif;
+    font-size: 1.1em;
+    color: white;
+    margin: 15px 0;
+}
+
+.popup-message.success {
+    color: #00ff00;
+}
+
+.popup-message.error {
+    color: #ff0000;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.back-button {
+    display: inline-block;
+    padding: 8px 15px;
+    background: #e10600;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+    font-family: 'Formula1', sans-serif;
+    font-size: 0.9em;
+    border: none;
+    cursor: pointer;
+}
+
+.back-button:hover {
+    background: #b80000;
+    transform: translateY(-2px);
+    box-shadow: 0 0 10px rgba(225, 6, 0, 0.5);
+}
+
+@media (min-width: 481px) {
+    .admin-container {
+        padding: 20px;
+    }
+    
+    .pontuacao-grid {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 20px;
+    }
+    
+    .botoes {
+        flex-direction: row;
+        justify-content: center;
+    }
+    
+    .save-button, .cancel-button {
+        width: auto;
+    }
+}
+
+@media (min-width: 769px) {
+    .admin-container {
+        max-width: 800px;
+    }
+    
+    .title {
+        font-size: 1.8em;
+    }
+    
+    .pontuacao-item label {
+        font-size: 1.1em;
+    }
+    
+    .pontuacao-item input {
+        font-size: 1.1em;
+    }
+    
+    .save-button, .cancel-button {
+        font-size: 1.2em;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const popup = document.getElementById('popup');
+    const closePopup = document.querySelector('.close-popup');
+    
+    // Fecha o popup após 3 segundos
+    if (popup.classList.contains('show')) {
+        setTimeout(() => {
+            popup.classList.remove('show');
+        }, 3000);
+    }
+    
+    // Fecha o popup ao clicar no X
+    closePopup.addEventListener('click', () => {
+        popup.classList.remove('show');
+    });
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,83 @@
+@media (max-width: 768px) {
+    .admin-container {
+        padding: 20px 10px;
+        margin: 10px;
+    }
+
+    .admin-header h1 {
+        font-size: 1.5em;
+    }
+
+    .admin-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .admin-card {
+        padding: 15px;
+    }
+
+    .admin-card h2 {
+        font-size: 1.2em;
+    }
+
+    .admin-card p {
+        font-size: 0.9em;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    .form-group label {
+        font-size: 0.9em;
+    }
+
+    .form-group input,
+    .form-group select {
+        padding: 8px;
+        font-size: 0.9em;
+    }
+
+    .btn-primary {
+        padding: 8px 16px;
+        font-size: 0.9em;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-container {
+        padding: 15px 5px;
+    }
+
+    .admin-header h1 {
+        font-size: 1.2em;
+    }
+
+    .admin-card {
+        padding: 12px;
+    }
+
+    .admin-card h2 {
+        font-size: 1.1em;
+    }
+
+    .admin-card p {
+        font-size: 0.8em;
+    }
+
+    .form-group label {
+        font-size: 0.8em;
+    }
+
+    .form-group input,
+    .form-group select {
+        padding: 6px;
+        font-size: 0.8em;
+    }
+
+    .btn-primary {
+        padding: 6px 12px;
+        font-size: 0.8em;
+    }
+} 

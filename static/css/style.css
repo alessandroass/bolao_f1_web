@@ -1,0 +1,123 @@
+@font-face {
+    font-family: 'Formula1';
+    src: url('../fonts/Formula1-Bold_web_0.ttf') format('truetype');
+}
+
+body {
+    background-image: url('../img/background_podio.png');
+    background-size: cover;
+    background-attachment: fixed;
+    font-family: 'Formula1', sans-serif;
+    color: white;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+}
+
+.container {
+    background-color: rgba(0, 0, 0, 0.85);
+    border-radius: 20px;
+    box-shadow: 0 0 20px red;
+    padding: 40px;
+    width: 90%;
+    max-width: 1200px;
+    text-align: center;
+}
+
+.titulo {
+    color: red;
+    font-size: 32px;
+    margin-bottom: 40px;
+    text-align: center;
+    font-family: 'Formula1', sans-serif;
+}
+
+.tabs {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-bottom: 40px;
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 15px;
+    border-radius: 50px;
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.tab-button {
+    background-color: transparent;
+    color: white;
+    border: 2px solid red;
+    border-radius: 50px;
+    padding: 12px 30px;
+    font-family: 'Formula1', sans-serif;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    min-width: 180px;
+    text-align: center;
+}
+
+.tab-button:hover {
+    background-color: rgba(255, 0, 0, 0.897);
+    transform: scale(1.05);
+}
+
+.gp-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+    padding: 20px;
+}
+
+.gp-button {
+    background-color: transparent;
+    color: white;
+    border: 2px solid blue;
+    border-radius: 50px;
+    padding: 15px 25px;
+    font-family: 'Formula1', sans-serif;
+    font-size: 18px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    width: 100%;
+    min-height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.gp-button:hover {
+    background-color: rgba(0, 0, 255, 0.897);
+    transform: scale(1.05);
+}
+
+@media (max-width: 768px) {
+    .container {
+        width: 95%;
+        padding: 20px;
+    }
+
+    .gp-container {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    }
+
+    .titulo {
+        font-size: 24px;
+    }
+
+    .tabs {
+        flex-direction: column;
+        gap: 15px;
+        padding: 20px;
+        width: 80%;
+    }
+
+    .tab-button {
+        width: 100%;
+        min-width: auto;
+    }
+}
+  

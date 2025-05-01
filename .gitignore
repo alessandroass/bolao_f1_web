@@ -1,0 +1,16 @@
+# Ambientes virtuais
+.venv/
+venv/
+
+# Arquivos compilados
+__pycache__/
+*.pyc
+
+# Banco de dados local
+*.db
+
+# Arquivos específicos do VS Code
+.vscode/
+
+# Dados de instância Flask
+instance/

@@ -1,0 +1,105 @@
+@media (max-width: 768px) {
+    .admin-container {
+        padding: 20px 10px;
+        margin: 10px;
+    }
+
+    .admin-header h1 {
+        font-size: 1.5em;
+    }
+
+    .config-form {
+        padding: 15px;
+    }
+
+    .config-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+
+    .config-item {
+        padding: 10px;
+    }
+
+    .config-item h3 {
+        font-size: 1.1em;
+    }
+
+    .config-options {
+        gap: 10px;
+    }
+
+    .config-option {
+        padding: 8px;
+    }
+
+    .config-option label {
+        font-size: 0.9em;
+    }
+
+    .save-button {
+        padding: 8px 16px;
+        font-size: 0.9em;
+    }
+
+    .popup {
+        width: 90%;
+        max-width: 300px;
+    }
+
+    .popup-message {
+        font-size: 0.9em;
+    }
+}
+
+@media (max-width: 480px) {
+    .admin-container {
+        padding: 15px 5px;
+    }
+
+    .admin-header h1 {
+        font-size: 1.2em;
+    }
+
+    .config-form {
+        padding: 10px;
+    }
+
+    .config-grid {
+        gap: 10px;
+    }
+
+    .config-item {
+        padding: 8px;
+    }
+
+    .config-item h3 {
+        font-size: 1em;
+    }
+
+    .config-options {
+        gap: 8px;
+    }
+
+    .config-option {
+        padding: 6px;
+    }
+
+    .config-option label {
+        font-size: 0.8em;
+    }
+
+    .save-button {
+        padding: 6px 12px;
+        font-size: 0.8em;
+    }
+
+    .popup {
+        width: 95%;
+        max-width: 250px;
+    }
+
+    .popup-message {
+        font-size: 0.8em;
+    }
+} 

@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="header-buttons">
+        <a href="{{ url_for('classificacao') }}" class="btn-voltar">Voltar</a>
+    </div>
+    
+    <h1 class="titulo">Resultados Parciais por Corrida</h1>
+    
+    {% if classificacao %}
+        <div class="table-responsive">
+            <table class="tabela-resultados">
+                <thead>
+                    <tr>
+                        <th class="sticky-col">Posição</th>
+                        <th class="sticky-col">Usuário</th>
+                        {% for gp in gps %}
+                            <th>
+                                <div class="gp-header">
+                                    <div class="gp-nome">{{ gp[1].split('(')[0].strip() }}</div>
+                                    <div class="gp-pais">({{ gp[1].split('(')[1].replace(')', '').strip() }})</div>
+                                </div>
+                            </th>
+                        {% endfor %}
+                        <th class="sticky-col-right">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for usuario in classificacao %}
+                        <tr class="{% if loop.index == 1 %}primeiro{% elif loop.index == 2 %}segundo{% elif loop.index == 3 %}terceiro{% endif %}">
+                            <td class="sticky-col posicao">{{ loop.index }}º</td>
+                            <td class="sticky-col usuario">{{ usuario.first_name }}</td>
+                            {% for gp in gps %}
+                                <td class="pontos-gp">{{ usuario.pontos_por_gp.get(gp[0], '-') }}</td>
+                            {% endfor %}
+                            <td class="sticky-col-right pontos">{{ usuario.total_pontos }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="sem-resultados">
+            <p>Nenhum resultado encontrado.</p>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.container {
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 20px;
+    overflow: hidden;
+}
+
+.header-buttons {
+    margin-bottom: 20px;
+}
+
+.btn-voltar {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #e10600;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-family: 'Formula1', sans-serif;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.btn-voltar:hover {
+    background-color: #b80000;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.titulo {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #e10600;
+    font-family: 'Formula1', sans-serif;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.table-responsive {
+    overflow-x: auto;
+    margin-bottom: 30px;
+    border-radius: 15px;
+    box-shadow: 0 0 20px rgba(225, 6, 0, 0.4);
+    position: relative;
+}
+
+.tabela-resultados {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 15px;
+    overflow: hidden;
+    min-width: 600px;
+}
+
+.tabela-resultados th {
+    background: linear-gradient(to bottom, #e10600, #b80000);
+    color: #fff;
+    font-family: 'Formula1', sans-serif;
+    padding: 4px 6px;
+    text-align: center;
+    font-size: 0.8em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    min-width: 60px;
+}
+
+.tabela-resultados td {
+    padding: 6px 8px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-size: 0.8em;
+    white-space: nowrap;
+}
+
+.tabela-resultados tr:hover {
+    background: rgba(225, 6, 0, 0.2);
+}
+
+.sticky-col {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.sticky-col-right {
+    position: sticky;
+    right: 0;
+    z-index: 1;
+    background: rgba(0, 0, 0, 0.8);
+}
+
+.posicao {
+    font-weight: bold;
+    color: #e10600;
+    font-size: 0.9em;
+}
+
+.usuario {
+    text-align: left;
+    font-weight: bold;
+    color: #fff;
+    font-size: 0.9em;
+}
+
+.pontos {
+    font-weight: bold;
+    color: #e10600;
+    font-size: 0.9em;
+}
+
+.pontos-gp {
+    font-weight: bold;
+    color: #fff;
+    font-size: 0.9em;
+}
+
+/* Estilo para a primeira posição */
+.primeiro {
+    background: linear-gradient(to right, rgba(255, 215, 0, 0.3), rgba(255, 215, 0, 0.1));
+}
+
+.primeiro .posicao {
+    color: #FFD700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+/* Estilo para a segunda posição */
+.segundo {
+    background: linear-gradient(to right, rgba(192, 192, 192, 0.3), rgba(192, 192, 192, 0.1));
+}
+
+.segundo .posicao {
+    color: #C0C0C0;
+    text-shadow: 0 0 10px rgba(192, 192, 192, 0.5);
+}
+
+/* Estilo para a terceira posição */
+.terceiro {
+    background: linear-gradient(to right, rgba(205, 127, 50, 0.3), rgba(205, 127, 50, 0.1));
+}
+
+.terceiro .posicao {
+    color: #CD7F32;
+    text-shadow: 0 0 10px rgba(205, 127, 50, 0.5);
+}
+
+.sem-resultados {
+    text-align: center;
+    padding: 40px;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 15px;
+    color: #fff;
+    font-size: 1.2em;
+    box-shadow: 0 0 20px rgba(225, 6, 0, 0.4);
+}
+
+.gp-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+}
+
+.gp-nome {
+    font-size: 0.8em;
+    line-height: 1.1;
+    margin-bottom: 2px;
+}
+
+.gp-pais {
+    font-size: 0.7em;
+    line-height: 1;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 8px;
+    }
+    
+    .tabela-resultados {
+        min-width: 500px;
+    }
+    
+    .tabela-resultados th,
+    .tabela-resultados td {
+        padding: 4px 6px;
+        font-size: 0.75em;
+    }
+
+    .posicao, .usuario, .pontos, .pontos-gp {
+        font-size: 0.8em;
+    }
+
+    .titulo {
+        font-size: 1.2em;
+        margin-bottom: 15px;
+    }
+
+    .btn-voltar {
+        padding: 8px 15px;
+        font-size: 0.9em;
+    }
+
+    .gp-header {
+        min-height: 35px;
+    }
+    
+    .gp-nome {
+        font-size: 0.7em;
+    }
+    
+    .gp-pais {
+        font-size: 0.65em;
+    }
+    
+    .tabela-resultados th {
+        min-width: 50px;
+    }
+}
+
+@media (max-width: 480px) {
+    .tabela-resultados {
+        min-width: 400px;
+    }
+    
+    .tabela-resultados th,
+    .tabela-resultados td {
+        padding: 3px 4px;
+        font-size: 0.7em;
+    }
+
+    .posicao, .usuario, .pontos, .pontos-gp {
+        font-size: 0.75em;
+    }
+
+    .titulo {
+        font-size: 1.1em;
+        margin-bottom: 12px;
+    }
+
+    .btn-voltar {
+        padding: 6px 12px;
+        font-size: 0.85em;
+    }
+
+    .gp-header {
+        min-height: 30px;
+    }
+    
+    .gp-nome {
+        font-size: 0.65em;
+    }
+    
+    .gp-pais {
+        font-size: 0.6em;
+    }
+    
+    .tabela-resultados th {
+        min-width: 45px;
+    }
+}
+
+/* Estilo da barra de rolagem */
+.table-responsive::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #e10600;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #b80000;
+}
+
+.table-responsive::-webkit-scrollbar-corner {
+    background: transparent;
+}
+</style>
+{% endblock %} 

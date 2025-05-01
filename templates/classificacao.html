@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="header-buttons">
+        <a href="{{ url_for('tela_gps') }}" class="btn-voltar">Voltar</a>
+        <a href="{{ url_for('resultados_parciais') }}" class="btn-resultados">Resultados Parciais</a>
+    </div>
+    
+    <h1 class="titulo">Classificação Geral</h1>
+    
+    {% if classificacao %}
+        <div class="table-responsive">
+            <table class="tabela-classificacao">
+                <thead>
+                    <tr>
+                        <th>Posição</th>
+                        <th>Usuário</th>
+                        <th>Pontuação Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for usuario in classificacao %}
+                        <tr class="{% if loop.index == 1 %}primeiro{% elif loop.index == 2 %}segundo{% elif loop.index == 3 %}terceiro{% endif %}">
+                            <td class="posicao">{{ loop.index }}º</td>
+                            <td class="usuario">{{ usuario.first_name }}</td>
+                            <td class="pontos">{{ usuario.total_pontos }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="sem-resultados">
+            <p>Nenhum resultado encontrado.</p>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.header-buttons {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.btn-voltar, .btn-resultados {
+    display: inline-block;
+    padding: 10px 20px;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    font-family: 'Formula1', sans-serif;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    font-size: 1em;
+}
+
+.btn-voltar {
+    background-color: #e10600;
+}
+
+.btn-resultados {
+    background-color: #1e3d8f;
+}
+
+.btn-voltar:hover, .btn-resultados:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.btn-voltar:hover {
+    background-color: #b80000;
+}
+
+.btn-resultados:hover {
+    background-color: #152b6a;
+}
+
+.titulo {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #e10600;
+    font-family: 'Formula1', sans-serif;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.table-responsive {
+    overflow-x: auto;
+    margin-bottom: 30px;
+    border-radius: 15px;
+    box-shadow: 0 0 20px rgba(225, 6, 0, 0.4);
+}
+
+.tabela-classificacao {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 15px;
+    overflow: hidden;
+    min-width: 280px;
+}
+
+.tabela-classificacao th {
+    background: linear-gradient(to bottom, #e10600, #b80000);
+    color: #fff;
+    font-family: 'Formula1', sans-serif;
+    padding: 12px 8px;
+    text-align: center;
+    font-size: 1em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    white-space: nowrap;
+}
+
+.tabela-classificacao td {
+    padding: 12px 8px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-size: 1em;
+    white-space: nowrap;
+}
+
+.tabela-classificacao tr:hover {
+    background: rgba(225, 6, 0, 0.2);
+    transform: scale(1.01);
+    transition: all 0.3s ease;
+}
+
+.posicao {
+    font-weight: bold;
+    color: #e10600;
+    font-size: 1.2em;
+}
+
+.usuario {
+    text-align: left;
+    font-weight: bold;
+    color: #fff;
+}
+
+.pontos {
+    font-weight: bold;
+    color: #e10600;
+    font-size: 1.2em;
+}
+
+/* Estilo para a primeira posição */
+.primeiro {
+    background: linear-gradient(to right, rgba(255, 215, 0, 0.3), rgba(255, 215, 0, 0.1));
+}
+
+.primeiro .posicao {
+    color: #FFD700;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+/* Estilo para a segunda posição */
+.segundo {
+    background: linear-gradient(to right, rgba(192, 192, 192, 0.3), rgba(192, 192, 192, 0.1));
+}
+
+.segundo .posicao {
+    color: #C0C0C0;
+    text-shadow: 0 0 10px rgba(192, 192, 192, 0.5);
+}
+
+/* Estilo para a terceira posição */
+.terceiro {
+    background: linear-gradient(to right, rgba(205, 127, 50, 0.3), rgba(205, 127, 50, 0.1));
+}
+
+.terceiro .posicao {
+    color: #CD7F32;
+    text-shadow: 0 0 10px rgba(205, 127, 50, 0.5);
+}
+
+.sem-resultados {
+    text-align: center;
+    padding: 40px;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 15px;
+    color: #fff;
+    font-size: 1.2em;
+    box-shadow: 0 0 20px rgba(225, 6, 0, 0.4);
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+
+    .header-buttons {
+        flex-direction: row;
+        gap: 8px;
+        justify-content: center;
+    }
+
+    .btn-voltar, .btn-resultados {
+        display: inline-block;
+        text-align: center;
+        padding: 8px 16px;
+        font-size: 0.9em;
+        width: auto;
+    }
+
+    .titulo {
+        font-size: 1.3em;
+        margin-bottom: 15px;
+    }
+
+    .tabela-classificacao th,
+    .tabela-classificacao td {
+        padding: 8px;
+        font-size: 0.85em;
+    }
+
+    .posicao, .pontos {
+        font-size: 0.9em;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 8px;
+    }
+
+    .header-buttons {
+        flex-direction: row;
+        gap: 6px;
+    }
+
+    .btn-voltar, .btn-resultados {
+        padding: 7px 14px;
+        font-size: 0.85em;
+    }
+
+    .titulo {
+        font-size: 1.2em;
+        margin-bottom: 12px;
+    }
+
+    .tabela-classificacao th,
+    .tabela-classificacao td {
+        padding: 6px;
+        font-size: 0.8em;
+    }
+
+    .posicao, .pontos {
+        font-size: 0.85em;
+    }
+
+    .table-responsive {
+        margin: 0 -8px;
+        width: calc(100% + 16px);
+    }
+}
+</style>
+{% endblock %} 

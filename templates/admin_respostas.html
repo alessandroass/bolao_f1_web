@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+
+{% block title %}Inserir Resultados - {{ nome_gp }}{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="header">
+        <h1>Inserir Resultados - {{ nome_gp }}</h1>
+        <a href="{{ url_for('admin') }}" class="back-button">Voltar</a>
+    </div>
+
+    <div id="popup" class="popup {% if get_flashed_messages() %}show{% endif %}">
+        <div class="popup-content">
+            <span class="close-popup">&times;</span>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <p class="popup-message {{ category }}">{{ message }}</p>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+
+    <div class="form-container">
+        <form method="POST" class="form">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="pole_position">Pole Position:</label>
+                    <select id="pole_position" name="pole_position" class="pole-position" required>
+                        <option value="">Selecione o piloto</option>
+                        {% for piloto in grid_2025 %}
+                        <option value="{{ piloto }}" {% if resposta and resposta[10] == piloto %}selected{% endif %}>{{ piloto }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                {% for pos in range(1, 11) %}
+                <div class="form-group">
+                    <label for="pos{{ pos }}">Posição {{ pos }}</label>
+                    <select name="pos{{ pos }}" id="pos{{ pos }}" required>
+                        <option value="">Selecione o piloto</option>
+                        {% for piloto in grid_2025 %}
+                        <option value="{{ piloto }}" {% if resposta and resposta[pos-1] == piloto %}selected{% endif %}>{{ piloto }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endfor %}
+            </div>
+
+            <button type="submit" class="submit-button">Salvar Resultados</button>
+        </form>
+    </div>
+</div>
+
+<style>
+.admin-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.header h1 {
+    color: #fff;
+    font-family: 'Formula1', sans-serif;
+    margin: 0;
+}
+
+.back-button {
+    display: inline-block;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    text-decoration: none;
+    border-radius: 4px;
+    border: 1px solid #e10600;
+    transition: all 0.3s ease;
+    font-family: 'Formula1', sans-serif;
+}
+
+.back-button:hover {
+    background: rgba(225, 6, 0, 0.2);
+    transform: translateY(-2px);
+}
+
+.form-container {
+    background: rgba(0, 0, 0, 0.6);
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e10600;
+}
+
+.form {
+    width: 100%;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #fff;
+    font-family: 'Formula1', sans-serif;
+}
+
+.form-group select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #e10600;
+    border-radius: 4px;
+    background-color: #1a1a1a;
+    color: white;
+    font-family: 'Formula1', sans-serif;
+    font-size: 0.9em;
+    margin-top: 5px;
+}
+
+.form-group select.pole-position {
+    border: 2px solid #2ecc71;
+    background-color: #1a3a1a;
+}
+
+.form-group select.pole-position:hover {
+    border-color: #27ae60;
+}
+
+.form-group select.pole-position:focus {
+    outline: none;
+    border-color: #27ae60;
+    box-shadow: 0 0 5px rgba(46, 204, 113, 0.5);
+}
+
+.form-group select option {
+    background: #000;
+    color: #fff;
+    padding: 12px;
+    font-size: 14px;
+    font-family: 'Formula1', sans-serif;
+}
+
+.form-group select option:hover {
+    background: #e10600;
+    color: #fff;
+}
+
+.submit-button {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    background: #e10600;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: 'Formula1', sans-serif;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+.submit-button:hover {
+    background: #c10500;
+    transform: translateY(-2px);
+}
+
+.popup {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.9);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+    z-index: 1000;
+    width: 80%;
+    max-width: 400px;
+}
+
+.popup.show {
+    display: block;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.popup-content {
+    position: relative;
+    text-align: center;
+}
+
+.close-popup {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    font-size: 24px;
+    cursor: pointer;
+    color: #fff;
+}
+
+.popup-message {
+    font-family: 'Formula1', sans-serif;
+    font-size: 1.2em;
+    color: #fff;
+    margin: 20px 0;
+}
+
+.popup-message.success {
+    color: #00ff00;
+}
+
+.popup-message.error {
+    color: #ff0000;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@media (max-width: 768px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const popup = document.getElementById('popup');
+    const closePopup = document.querySelector('.close-popup');
+
+    // Fechar popup ao clicar no X
+    closePopup.addEventListener('click', function() {
+        popup.classList.remove('show');
+    });
+
+    // Fechar popup após 3 segundos
+    if (popup.classList.contains('show')) {
+        setTimeout(() => {
+            popup.classList.remove('show');
+        }, 3000);
+    }
+});
+</script>
+{% endblock %} 

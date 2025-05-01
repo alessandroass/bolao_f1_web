@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% block title %}Área Administrativa{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header-buttons">
+        <a href="{{ url_for('tela_gps') }}" class="btn-voltar">Voltar</a>
+    </div>
+    
+    <h1 class="titulo">Área Administrativa</h1>
+    
+    <div class="admin-grid">
+        <div class="admin-card">
+            <h3>Inserir Resultados</h3>
+            <p>Inserir resultados dos GPs</p>
+            <div class="gp-select">
+                <select id="gp-select">
+                    <option value="">Selecione um GP</option>
+                    {% for gp in gps %}
+                    <option value="{{ gp.slug }}">{{ gp.nome }}</option>
+                    {% endfor %}
+                </select>
+                <button type="button" id="confirm-gp" class="confirm-button">Confirmar</button>
+            </div>
+        </div>
+        
+        <a href="{{ url_for('admin_gerenciar_pilotos') }}" class="admin-card">
+            <h3>Gerenciar Pilotos</h3>
+            <p>Adicionar ou remover pilotos</p>
+        </a>
+        
+        <a href="{{ url_for('admin_gerenciar_usuarios') }}" class="admin-card">
+            <h3>Gerenciar Usuários</h3>
+            <p>Resetar senhas e gerenciar usuários</p>
+        </a>
+        
+        <a href="{{ url_for('admin_pontuacao') }}" class="admin-card">
+            <h3>Configurar Pontuação</h3>
+            <p>Definir pontos por posição</p>
+        </a>
+
+        <a href="{{ url_for('admin_configuracoes') }}" class="admin-card">
+            <h3>Configurações do Sistema</h3>
+            <p>Habilitar/desabilitar votação por GP</p>
+        </a>
+
+        <a href="{{ url_for('admin_datas_gps') }}" class="admin-card">
+            <h3>Gerenciar Datas dos GPs</h3>
+            <p>Alterar datas e horários das corridas</p>
+        </a>
+    </div>
+</div>
+
+<style>
+.container {
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+.header-buttons {
+    margin-bottom: 20px;
+}
+
+.titulo {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #fff;
+}
+
+.admin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.admin-card {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 20px;
+    border-radius: 10px;
+    text-decoration: none;
+    color: #fff;
+    transition: all 0.3s ease;
+}
+
+.admin-card:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+.admin-card h3 {
+    color: #e10600;
+    font-family: 'Formula1', sans-serif;
+    margin-bottom: 10px;
+}
+
+.admin-card p {
+    color: #aaa;
+    margin-bottom: 15px;
+}
+
+.gp-select {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.gp-select select {
+    padding: 8px;
+    border: 1px solid #e10600;
+    border-radius: 4px;
+    background-color: #1a1a1a;
+    color: white;
+    font-family: 'Formula1', sans-serif;
+    font-size: 0.9em;
+    min-width: 200px;
+}
+
+.confirm-button {
+    padding: 8px 16px;
+    background: #e10600;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'Formula1', sans-serif;
+    transition: all 0.3s ease;
+}
+
+.confirm-button:hover {
+    background: #b80000;
+    transform: translateY(-2px);
+}
+
+.confirm-button:disabled {
+    background: #666;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-voltar {
+    display: inline-block;
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    text-decoration: none;
+    border-radius: 4px;
+    border: 1px solid #e10600;
+    transition: all 0.3s ease;
+    font-family: 'Formula1', sans-serif;
+}
+
+.btn-voltar:hover {
+    background: rgba(225, 6, 0, 0.2);
+    transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+        width: 100%;
+        overflow-x: hidden;
+    }
+    
+    .admin-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+        padding: 0 5px;
+    }
+
+    .admin-card {
+        padding: 15px;
+        margin: 0;
+    }
+
+    .gp-select {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .gp-select select {
+        width: 100%;
+        min-width: unset;
+    }
+
+    .confirm-button {
+        width: 100%;
+    }
+
+    .header-buttons {
+        margin-bottom: 15px;
+        text-align: center;
+    }
+
+    .btn-voltar {
+        display: inline-block;
+        width: auto;
+        padding: 8px 16px;
+    }
+
+    .titulo {
+        font-size: 1.5em;
+        margin-bottom: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 8px;
+    }
+
+    .admin-card {
+        padding: 12px;
+    }
+
+    .admin-card h3 {
+        font-size: 1.1em;
+    }
+
+    .admin-card p {
+        font-size: 0.9em;
+    }
+
+    .gp-select select,
+    .confirm-button {
+        font-size: 0.9em;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const gpSelect = document.getElementById('gp-select');
+    const confirmButton = document.getElementById('confirm-gp');
+
+    // Desabilitar botão inicialmente
+    confirmButton.disabled = true;
+
+    // Habilitar botão quando um GP for selecionado
+    gpSelect.addEventListener('change', function() {
+        confirmButton.disabled = !this.value;
+    });
+
+    // Redirecionar ao clicar no botão de confirmar
+    confirmButton.addEventListener('click', function() {
+        if (gpSelect.value) {
+            window.location.href = `/admin/respostas/${gpSelect.value}`;
+        }
+    });
+});
+</script>
+{% endblock %} 

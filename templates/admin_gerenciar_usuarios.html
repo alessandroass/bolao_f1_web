@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciar Usuários - Bolão F1 2025{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="admin-header">
+        <h1 class="title">Gerenciar Usuários</h1>
+        <a href="{{ url_for('admin') }}" class="back-button">Voltar</a>
+    </div>
+    
+    <div class="admin-section">
+        <div class="users-list">
+            <h2>Usuários Cadastrados</h2>
+            <div class="users-grid">
+                {% for usuario in usuarios %}
+                <div class="user-card">
+                    <div class="user-info">
+                        <span class="username">{{ usuario.username }}</span>
+                        <span class="admin-badge" {% if not usuario.is_admin %}style="display: none;"{% endif %}>Admin</span>
+                    </div>
+                    <div class="user-actions">
+                        <form method="POST" class="action-form">
+                            <input type="hidden" name="usuario_id" value="{{ usuario.id }}">
+                            <input type="hidden" name="action" value="reset_password">
+                            <button type="submit" class="action-button reset-button">Resetar Senha</button>
+                        </form>
+                        <form method="POST" class="action-form">
+                            <input type="hidden" name="usuario_id" value="{{ usuario.id }}">
+                            <input type="hidden" name="action" value="delete">
+                            <button type="submit" class="action-button delete-button">Excluir</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="popup" class="popup {% if get_flashed_messages() %}show{% endif %}">
+    <div class="popup-content">
+        <span class="close-popup">&times;</span>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <p class="popup-message {{ category }}">{{ message }}</p>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+</div>
+
+<div id="confirm-popup" class="popup">
+    <div class="popup-content">
+        <span class="close-popup">&times;</span>
+        <p class="popup-message" id="confirm-message"></p>
+        <div class="popup-buttons">
+            <button class="confirm-button" id="confirm-yes">Sim</button>
+            <button class="confirm-button" id="confirm-no">Não</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.admin-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.title {
+    color: #e10600;
+    font-family: 'Formula1', sans-serif;
+    margin: 0;
+}
+
+.back-button {
+    padding: 10px 20px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    text-decoration: none;
+    border-radius: 5px;
+    border: 1px solid #e10600;
+    transition: all 0.3s ease;
+    font-family: 'Formula1', sans-serif;
+}
+
+.back-button:hover {
+    background: rgba(225, 6, 0, 0.2);
+    transform: translateY(-2px);
+}
+
+.admin-section {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 20px;
+    border-radius: 10px;
+}
+
+.users-list h2 {
+    color: #e10600;
+    font-family: 'Formula1', sans-serif;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(225, 6, 0, 0.3);
+}
+
+.users-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 15px;
+}
+
+.user-card {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.user-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.username {
+    color: #fff;
+    font-weight: bold;
+}
+
+.admin-badge {
+    background: #e10600;
+    color: #fff;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 0.8em;
+}
+
+.user-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.action-form {
+    margin: 0;
+    flex: 1;
+}
+
+.action-button {
+    width: 100%;
+    padding: 8px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Formula1', sans-serif;
+}
+
+.reset-button {
+    background: rgba(0, 128, 0, 0.2);
+    color: #fff;
+    border: 1px solid #008000;
+}
+
+.reset-button:hover {
+    background: rgba(0, 128, 0, 0.3);
+}
+
+.delete-button {
+    background: rgba(255, 0, 0, 0.2);
+    color: #fff;
+    border: 1px solid #ff0000;
+}
+
+.delete-button:hover {
+    background: rgba(255, 0, 0, 0.3);
+}
+
+@media (max-width: 768px) {
+    .admin-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .users-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .user-actions {
+        flex-direction: column;
+    }
+}
+
+.popup {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.9);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+    z-index: 1000;
+    width: 80%;
+    max-width: 400px;
+}
+
+.popup.show {
+    display: block;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.popup-content {
+    position: relative;
+    text-align: center;
+}
+
+.close-popup {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    font-size: 24px;
+    cursor: pointer;
+    color: white;
+}
+
+.popup-message {
+    font-family: 'Formula1', sans-serif;
+    font-size: 1.2em;
+    color: white;
+    margin: 20px 0;
+}
+
+.popup-message.success {
+    color: #00ff00;
+}
+
+.popup-message.error {
+    color: #ff0000;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.popup-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.confirm-button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: 'Formula1', sans-serif;
+    transition: all 0.3s ease;
+}
+
+#confirm-yes {
+    background: #e10600;
+    color: white;
+}
+
+#confirm-yes:hover {
+    background: #b80000;
+}
+
+#confirm-no {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid #e10600;
+}
+
+#confirm-no:hover {
+    background: rgba(225, 6, 0, 0.2);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const popup = document.getElementById('popup');
+    const confirmPopup = document.getElementById('confirm-popup');
+    const closePopup = document.querySelector('.close-popup');
+    const confirmMessage = document.getElementById('confirm-message');
+    const confirmYes = document.getElementById('confirm-yes');
+    const confirmNo = document.getElementById('confirm-no');
+    
+    let currentForm = null;
+    
+    // Fecha o popup após 3 segundos
+    if (popup.classList.contains('show')) {
+        setTimeout(() => {
+            popup.classList.remove('show');
+        }, 3000);
+    }
+    
+    // Fecha o popup ao clicar no X
+    closePopup.addEventListener('click', () => {
+        popup.classList.remove('show');
+        confirmPopup.classList.remove('show');
+    });
+    
+    // Confirmação antes de resetar senha ou excluir usuário
+    const actionForms = document.querySelectorAll('.action-form');
+    actionForms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            currentForm = this;
+            
+            const action = this.querySelector('input[name="action"]').value;
+            const message = action === 'reset_password' 
+                ? 'Tem certeza que deseja resetar a senha deste usuário?'
+                : 'Tem certeza que deseja excluir este usuário?';
+            
+            confirmMessage.textContent = message;
+            confirmPopup.classList.add('show');
+        });
+    });
+    
+    // Ações dos botões de confirmação
+    confirmYes.addEventListener('click', () => {
+        if (currentForm) {
+            currentForm.submit();
+        }
+        confirmPopup.classList.remove('show');
+    });
+    
+    confirmNo.addEventListener('click', () => {
+        confirmPopup.classList.remove('show');
+    });
+});
+</script>
+{% endblock %} 
