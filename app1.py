@@ -11,6 +11,17 @@ import pytz
 app = Flask(__name__)
 app.secret_key = 'sua_chave_secreta_aqui'
 
+# Caminho do banco de dados
+DB_PATH = os.path.join(os.getenv('RENDER_PROJECT_ROOT', ''), 'data', 'bolao_f1.db')
+
+# Função auxiliar para gerenciar conexões com o banco de dados
+def get_db_connection():
+    # Garante que o diretório data existe
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
 # Lista dos GPs (nome da rota, nome para exibição, data da corrida, hora da corrida, data da classificação, hora da classificação)
 gps_2025 = [
     ("australia", "🇦🇺 Austrália (Melbourne)", "16/03/2025", "01:00", "15/03/2025", "02:00"),
@@ -50,7 +61,7 @@ grid_2025 = [
 
 # Configuração do banco de dados
 def init_db():
-    conn = sqlite3.connect('bolao_f1.db')
+    conn = get_db_connection()
     c = conn.cursor()
     
     # Tabela de usuários
@@ -186,7 +197,7 @@ def admin_required(f):
     def decorated_function(*args, **kwargs):
         if 'username' not in session:
             return redirect(url_for('login'))
-        conn = sqlite3.connect('bolao_f1.db')
+        conn = get_db_connection()
         c = conn.cursor()
         c.execute('SELECT is_admin FROM usuarios WHERE username = ?', (session['username'],))
         is_admin = c.fetchone()[0]
@@ -212,7 +223,7 @@ def login():
         username = request.form['username']
         password = request.form['password']
         
-        conn = sqlite3.connect('bolao_f1.db')
+        conn = get_db_connection()
         c = conn.cursor()
         c.execute('SELECT * FROM usuarios WHERE username = ?', (username,))
         user = c.fetchone()
@@ -246,7 +257,7 @@ def registro():
             flash('As senhas não coincidem!', 'error')
             return redirect(url_for('registro'))
         
-        conn = sqlite3.connect('bolao_f1.db')
+        conn = get_db_connection()
         c = conn.cursor()
         
         try:
@@ -283,7 +294,7 @@ def tela_gps():
     hoje = datetime.now(tz_brasilia).date()
     
     # Buscar a posição e pontuação do usuário
-    conn = sqlite3.connect('bolao_f1.db')
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute('''
         WITH pontos_por_gp AS (
@@ -385,7 +396,7 @@ def tela_palpite_gp(nome_gp):
     )
 
     if request.method == "POST":
-        conn = sqlite3.connect('bolao_f1.db')
+        conn = get_db_connection()
         c = conn.cursor()
         
         # Debug: Imprimir dados recebidos do formulário
@@ -499,7 +510,7 @@ def tela_palpite_gp(nome_gp):
         conn.close()
 
     # Busca palpite existente
-    conn = sqlite3.connect('bolao_f1.db')
+    conn = get_db_connection()
     c = conn.cursor()
     c.execute('''SELECT pos_1, pos_2, pos_3, pos_4, pos_5, pos_6, pos_7, pos_8,
                 pos_9, pos_10, pole FROM palpites
@@ -572,7 +583,7 @@ def meus_resultados():
     if 'username' not in session:
         return redirect(url_for('login'))
     
-    conn = sqlite3.connect('bolao_f1.db')
+    conn = get_db_connection()
     c = conn.cursor()
     
     # Busca todos os palpites do usuário com as respostas correspondentes
@@ -631,7 +642,7 @@ def classificacao():
     if 'username' not in session:
         return redirect(url_for('login'))
     
-    conn = sqlite3.connect('bolao_f1.db')
+    conn = get_db_connection()
     c = conn.cursor()
     
     # Busca todos os usuários (exceto admin) e seus palpites
@@ -692,7 +703,7 @@ def admin():
     if 'username' not in session:
         return redirect(url_for('login'))
     
-    conn = sqlite3.connect('bolao_f1.db')
+    conn = get_db_connection()
     c = conn.cursor()
     
     # Busca todos os usuários
@@ -728,7 +739,7 @@ def admin():
 @admin_required
 def admin_respostas(nome_gp):
     if request.method == 'POST':
-        conn = sqlite3.connect('bolao_f1.db')
+        conn = get_db_connection()
         c = conn.cursor()
         
         # Verifica se já existe resposta para este GP
@@ -788,7 +799,7 @@ def admin_respostas(nome_gp):
         flash('Respostas salvas com sucesso!', 'success')
         
         # Busca a resposta atualizada para exibir na página
-        conn = sqlite3.connect('bolao_f1.db')
+        conn = get_db_connection()
         c = conn.cursor()
         c.execute('''SELECT pos_1, pos_2, pos_3, pos_4, pos_5, pos_6, pos_7, pos_8,
                     pos_9, pos_10, pole FROM respostas
@@ -806,7 +817,7 @@ def admin_respostas(nome_gp):
                              resposta=resposta)
     
     # Busca resposta existente
-    conn = sqlite3.connect('bolao_f1.db')
+    conn = get_db_connection()
     c = conn.cursor()
     c.execute('''SELECT pos_1, pos_2, pos_3, pos_4, pos_5, pos_6, pos_7, pos_8,
                 pos_9, pos_10, pole FROM respostas
@@ -828,7 +839,7 @@ def admin_respostas(nome_gp):
 @admin_required
 def admin_pontuacao():
     if request.method == 'POST':
-        conn = sqlite3.connect('bolao_f1.db')
+        conn = get_db_connection()
         c = conn.cursor()
         
         try:
@@ -847,7 +858,7 @@ def admin_pontuacao():
             conn.close()
     
     # Busca os valores atuais
-    conn = sqlite3.connect('bolao_f1.db')
+    conn = get_db_connection()
     c = conn.cursor()
     c.execute('SELECT posicao, pontos FROM pontuacao ORDER BY posicao')
     pontuacao = dict(c.fetchall())
@@ -862,7 +873,7 @@ def admin_gerenciar_pilotos():
         novo_piloto = request.form.get('novo_piloto')
         piloto = request.form.get('piloto')
         
-        conn = sqlite3.connect('bolao_f1.db')
+        conn = get_db_connection()
         c = conn.cursor()
         
         if novo_piloto:
@@ -884,7 +895,7 @@ def admin_gerenciar_pilotos():
         conn.close()
     
     # Busca todos os pilotos
-    conn = sqlite3.connect('bolao_f1.db')
+    conn = get_db_connection()
     c = conn.cursor()
     c.execute('SELECT nome FROM pilotos ORDER BY nome')
     pilotos = [row[0] for row in c.fetchall()]
@@ -899,7 +910,7 @@ def admin_gerenciar_usuarios():
         usuario_id = request.form.get('usuario_id')
         action = request.form.get('action')
         
-        conn = sqlite3.connect('bolao_f1.db')
+        conn = get_db_connection()
         c = conn.cursor()
         
         if action == 'reset_password':
@@ -921,7 +932,7 @@ def admin_gerenciar_usuarios():
         conn.close()
     
     # Busca todos os usuários
-    conn = sqlite3.connect('bolao_f1.db')
+    conn = get_db_connection()
     c = conn.cursor()
     c.execute('SELECT id, username, first_name, is_admin FROM usuarios')
     usuarios = [{'id': row[0], 'username': row[1], 'first_name': row[2], 'is_admin': row[3]} for row in c.fetchall()]
@@ -942,7 +953,7 @@ def redefinir_senha():
             flash('As senhas não coincidem!', 'error')
             return redirect(url_for('redefinir_senha'))
         
-        conn = sqlite3.connect('bolao_f1.db')
+        conn = get_db_connection()
         c = conn.cursor()
         c.execute('UPDATE usuarios SET password = ?, primeiro_login = 0 WHERE id = ?',
                  (generate_password_hash(nova_senha), session['user_id']))
@@ -955,7 +966,7 @@ def redefinir_senha():
     return render_template('redefinir_senha.html')
 
 def reset_admin_password():
-    conn = sqlite3.connect('bolao_f1.db')
+    conn = get_db_connection()
     c = conn.cursor()
     
     # Define a senha do admin como 'admin8163'
@@ -969,7 +980,7 @@ def reset_admin_password():
 @app.route('/admin/resetar-senha/<int:user_id>', methods=['POST'])
 @admin_required
 def resetar_senha(user_id):
-    conn = sqlite3.connect('bolao_f1.db')
+    conn = get_db_connection()
     c = conn.cursor()
     
     # Gera uma senha aleatória
@@ -996,7 +1007,7 @@ def alterar_senha():
         nova_senha = request.form['nova_senha']
         confirmar_senha = request.form['confirmar_senha']
         
-        conn = sqlite3.connect('bolao_f1.db')
+        conn = get_db_connection()
         c = conn.cursor()
         
         # Verifica a senha atual
@@ -1030,7 +1041,7 @@ def resultados_parciais():
     if 'username' not in session:
         return redirect(url_for('login'))
     
-    conn = sqlite3.connect('bolao_f1.db')
+    conn = get_db_connection()
     c = conn.cursor()
     
     # Busca todos os usuários (exceto admin)
@@ -1119,7 +1130,7 @@ def admin_configuracoes():
             posicoes_habilitado = request.form.get(f'posicoes_{slug}') == 'on'
             
             # Atualizar configurações no banco de dados
-            conn = sqlite3.connect('bolao_f1.db')
+            conn = get_db_connection()
             c = conn.cursor()
             c.execute('''UPDATE config_votacao 
                         SET pole_habilitado = ?, posicoes_habilitado = ?
@@ -1132,7 +1143,7 @@ def admin_configuracoes():
         return redirect(url_for('admin_configuracoes'))
     
     # Buscar configurações atuais
-    conn = sqlite3.connect('bolao_f1.db')
+    conn = get_db_connection()
     c = conn.cursor()
     c.execute('SELECT gp_slug, pole_habilitado, posicoes_habilitado FROM config_votacao')
     configs_db = {row[0]: {'pole': row[1], 'posicoes': row[2]} for row in c.fetchall()}
@@ -1231,7 +1242,7 @@ def tela_palpite(gp_slug):
     )
     
     # Busca configurações do banco de dados
-    conn = sqlite3.connect('bolao_f1.db')
+    conn = get_db_connection()
     c = conn.cursor()
     c.execute('SELECT pole_habilitado, posicoes_habilitado FROM config_votacao WHERE gp_slug = ?', (gp_slug,))
     config = c.fetchone()
@@ -1251,7 +1262,7 @@ def tela_palpite(gp_slug):
             posicoes_habilitado = True
     
     # Busca o palpite do usuário para este GP
-    cursor = mysql.connection.cursor()
+    cursor = conn.cursor()
     cursor.execute('''
         SELECT pole, posicoes 
         FROM palpites 
@@ -1275,7 +1286,7 @@ def tela_palpite(gp_slug):
 @admin_required
 def admin_datas_gps():
     if request.method == 'POST':
-        conn = sqlite3.connect('bolao_f1.db')
+        conn = get_db_connection()
         c = conn.cursor()
         
         try:
@@ -1316,7 +1327,7 @@ def admin_datas_gps():
             conn.close()
     
     # Busca as datas atuais dos GPs
-    conn = sqlite3.connect('bolao_f1.db')
+    conn = get_db_connection()
     c = conn.cursor()
     c.execute('SELECT slug, data_corrida, hora_corrida, data_classificacao, hora_classificacao FROM gps')
     gps_datas = {row[0]: {
@@ -1344,7 +1355,7 @@ def admin_datas_gps():
     return render_template('admin_datas_gps.html', gps=gps_com_datas)
 
 def criar_admin():
-    conn = sqlite3.connect('bolao_f1.db')
+    conn = get_db_connection()
     c = conn.cursor()
     
     # Verifica se já existe um usuário admin

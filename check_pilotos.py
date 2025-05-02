@@ -1,7 +1,19 @@
 import sqlite3
+import os
+
+# Caminho do banco de dados
+DB_PATH = os.path.join(os.getenv('RENDER_PROJECT_ROOT', ''), 'data', 'bolao_f1.db')
+
+# Função auxiliar para gerenciar conexões com o banco de dados
+def get_db_connection():
+    # Garante que o diretório data existe
+    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 def check_pilotos():
-    conn = sqlite3.connect('bolao_f1.db')
+    conn = get_db_connection()
     c = conn.cursor()
     
     # Verifica se a tabela existe
@@ -44,5 +56,5 @@ def check_pilotos():
     
     conn.close()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     check_pilotos() 

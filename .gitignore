@@ -1,13 +1,29 @@
-# Ambientes virtuais
-.venv/
-venv/
+# Diretório de dados
+data/
 
-# Arquivos compilados
+# Arquivos Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
 
-# Arquivos específicos do VS Code
+# Ambiente virtual
+venv/
+env/
+ENV/
+
+# Arquivos de IDE
+.idea/
 .vscode/
+*.swp
+*.swo
 
-# Dados de instância Flask
-instance/
+# Arquivos de log
+*.log
+
+# Arquivos de banco de dados
+*.db
+*.sqlite3
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db 
