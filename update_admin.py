@@ -1,22 +1,36 @@
-import sqlite3
-from werkzeug.security import generate_password_hash
+from flask import Flask
+from models import db, Usuario
+from config import Config
+
+app = Flask(__name__)
+app.config.from_object(Config)
+db.init_app(app)
 
 def update_admin():
-    conn = sqlite3.connect('bolao_f1.db')
-    c = conn.cursor()
-    
-    try:
-        # Atualiza a senha do usuário admin
-        c.execute('''UPDATE usuarios 
-                    SET password = ?, is_admin = 1
-                    WHERE username = ?''',
-                 (generate_password_hash('admin8163'), 'admin'))
-        conn.commit()
-        print("Senha do administrador atualizada com sucesso!")
-    except Exception as e:
-        print(f"Erro ao atualizar senha do administrador: {e}")
-    finally:
-        conn.close()
+    with app.app_context():
+        # Busca o usuário admin
+        admin = Usuario.query.filter_by(username='admin').first()
+        
+        if admin:
+            # Atualiza os dados do admin
+            admin.first_name = "Administrador"
+            admin.is_admin = True
+            admin.primeiro_login = True
+            admin.set_password('admin123')
+            db.session.commit()
+            print("Dados do admin atualizados com sucesso!")
+        else:
+            # Cria um novo admin
+            admin = Usuario(
+                username='admin',
+                first_name='Administrador',
+                is_admin=True,
+                primeiro_login=True
+            )
+            admin.set_password('admin123')
+            db.session.add(admin)
+            db.session.commit()
+            print("Novo admin criado com sucesso!")
 
 if __name__ == "__main__":
     update_admin() 

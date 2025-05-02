@@ -1,27 +1,32 @@
-import sqlite3
+from flask import Flask
+from models import db, Piloto
+from config import Config
 
-# Lista correta de pilotos
-pilotos = [
-    "Max Verstappen", "Yuki Tsunoda", "Kimi Antonelli", "George Russell",
-    "Charles Leclerc", "Lewis Hamilton", "Lando Norris", "Oscar Piastri",
-    "Fernando Alonso", "Lance Stroll", "Liam Lawson", "Isack Hadjar",
-    "Pierre Gasly", "Jack Doohan", "Niko Hulkenberg", "Gabriel Bortoleto",
-    "Esteban Ocon", "Oliver Bearman", "Carlos Sainz", "Alexander Albon"
-]
+app = Flask(__name__)
+app.config.from_object(Config)
+db.init_app(app)
 
-# Conectar ao banco de dados
-conn = sqlite3.connect('bolao_f1.db')
-c = conn.cursor()
+def update_pilotos():
+    with app.app_context():
+        # Lista dos pilotos da F1 2025
+        pilotos_2025 = [
+            "Max Verstappen", "Yuki Tsunoda", "Kimi Antonelli", "George Russell",
+            "Charles Leclerc", "Lewis Hamilton", "Lando Norris", "Oscar Piastri",
+            "Fernando Alonso", "Lance Stroll", "Liam Lawson", "Isack Hadjar",
+            "Pierre Gasly", "Jack Doohan", "Niko Hulkenberg", "Gabriel Bortoleto",
+            "Esteban Ocon", "Oliver Bearman", "Carlos Sainz", "Alexander Albon"
+        ]
+        
+        # Remove todos os pilotos existentes
+        Piloto.query.delete()
+        
+        # Adiciona os novos pilotos
+        for nome in pilotos_2025:
+            piloto = Piloto(nome=nome)
+            db.session.add(piloto)
+        
+        db.session.commit()
+        print("Pilotos atualizados com sucesso!")
 
-# Limpar a tabela de pilotos
-c.execute('DELETE FROM pilotos')
-
-# Inserir os pilotos corretos
-for piloto in pilotos:
-    c.execute('INSERT INTO pilotos (nome) VALUES (?)', (piloto,))
-
-# Commit e fechar conexão
-conn.commit()
-conn.close()
-
-print("Lista de pilotos atualizada com sucesso!") 
+if __name__ == "__main__":
+    update_pilotos() 

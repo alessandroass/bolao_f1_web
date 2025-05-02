@@ -1,36 +1,36 @@
-import sqlite3
-import os
+from flask import Flask
+from models import db, Usuario, Piloto, Palpite, Resposta, Pontuacao, ConfigVotacao, GP
+from config import Config
 
-# Caminho do banco de dados
-DB_PATH = os.path.join(os.getenv('RENDER_PROJECT_ROOT', ''), 'data', 'bolao_f1.db')
-
-# Função auxiliar para gerenciar conexões com o banco de dados
-def get_db_connection():
-    # Garante que o diretório data existe
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+app = Flask(__name__)
+app.config.from_object(Config)
+db.init_app(app)
 
 def check_db():
-    conn = get_db_connection()
-    c = conn.cursor()
-    
-    # Verifica a estrutura da tabela
-    print("Estrutura da tabela usuarios:")
-    c.execute("PRAGMA table_info(usuarios)")
-    columns = c.fetchall()
-    for col in columns:
-        print(f"Coluna {col[0]}: {col[1]} ({col[2]})")
-    
-    # Verifica os dados existentes
-    print("\nUsuários cadastrados:")
-    c.execute("SELECT * FROM usuarios")
-    users = c.fetchall()
-    for user in users:
-        print(f"ID: {user[0]}, Username: {user[1]}, Nome: {user[2]}, Is Admin: {user[4]}")
-    
-    conn.close()
+    with app.app_context():
+        # Verifica se as tabelas existem
+        print("\nVerificando tabelas no banco de dados:")
+        print("-" * 50)
+        
+        # Verifica cada tabela
+        tabelas = {
+            'usuarios': Usuario,
+            'pilotos': Piloto,
+            'palpites': Palpite,
+            'respostas': Resposta,
+            'pontuacao': Pontuacao,
+            'config_votacao': ConfigVotacao,
+            'gps': GP
+        }
+        
+        for nome, modelo in tabelas.items():
+            try:
+                count = modelo.query.count()
+                print(f"Tabela '{nome}': {count} registros")
+            except Exception as e:
+                print(f"Tabela '{nome}': Erro ao verificar - {str(e)}")
+        
+        print("-" * 50)
 
 if __name__ == "__main__":
     check_db() 

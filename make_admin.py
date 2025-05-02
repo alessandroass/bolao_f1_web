@@ -1,33 +1,35 @@
-import sqlite3
-import os
+from flask import Flask
+from models import db, Usuario
+from config import Config
 
-# Caminho do banco de dados
-DB_PATH = os.path.join(os.getenv('RENDER_PROJECT_ROOT', ''), 'data', 'bolao_f1.db')
+app = Flask(__name__)
+app.config.from_object(Config)
+db.init_app(app)
 
-# Função auxiliar para gerenciar conexões com o banco de dados
-def get_db_connection():
-    # Garante que o diretório data existe
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
-
-def make_admin(username):
-    conn = get_db_connection()
-    c = conn.cursor()
-    
-    try:
-        c.execute("UPDATE usuarios SET is_admin = 1 WHERE username = ?", (username,))
-        conn.commit()
-        print(f"Usuário {username} agora é administrador!")
-    except sqlite3.Error as e:
-        print(f"Erro ao atualizar usuário: {e}")
-    finally:
-        conn.close()
+def make_admin():
+    with app.app_context():
+        # Busca o usuário admin
+        admin = Usuario.query.filter_by(username='admin').first()
+        
+        if admin:
+            # Atualiza os dados do admin
+            admin.is_admin = True
+            admin.primeiro_login = True
+            admin.set_password('admin123')
+            db.session.commit()
+            print("Usuário admin atualizado com sucesso!")
+        else:
+            # Cria um novo admin
+            admin = Usuario(
+                username='admin',
+                first_name='Administrador',
+                is_admin=True,
+                primeiro_login=True
+            )
+            admin.set_password('admin123')
+            db.session.add(admin)
+            db.session.commit()
+            print("Novo admin criado com sucesso!")
 
 if __name__ == "__main__":
-    import sys
-    if len(sys.argv) != 2:
-        print("Uso: python make_admin.py <username>")
-        sys.exit(1)
-    make_admin(sys.argv[1]) 
+    make_admin() 

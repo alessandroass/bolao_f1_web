@@ -1,33 +1,38 @@
-import sqlite3
-import os
+from flask import Flask
+from models import db, Usuario
+from config import Config
 
-# Caminho do banco de dados
-DB_PATH = os.path.join(os.getenv('RENDER_PROJECT_ROOT', ''), 'data', 'bolao_f1.db')
-
-# Função auxiliar para gerenciar conexões com o banco de dados
-def get_db_connection():
-    # Garante que o diretório data existe
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+app = Flask(__name__)
+app.config.from_object(Config)
+db.init_app(app)
 
 def add_admin_column():
-    conn = get_db_connection()
-    c = conn.cursor()
-    
-    try:
-        # Adiciona a coluna is_admin se ela não existir
-        c.execute("ALTER TABLE usuarios ADD COLUMN is_admin BOOLEAN DEFAULT 0")
-        conn.commit()
+    with app.app_context():
+        # Verifica se a coluna is_admin já existe
+        try:
+            # Tenta buscar um usuário com is_admin
+            usuario = Usuario.query.first()
+            if usuario and hasattr(usuario, 'is_admin'):
+                print("Coluna is_admin já existe!")
+                return
+        except Exception:
+            pass
+        
+        # Se chegou aqui, a coluna não existe
+        print("Adicionando coluna is_admin...")
+        
+        # Atualiza todos os usuários existentes para não serem admin
+        usuarios = Usuario.query.all()
+        for usuario in usuarios:
+            usuario.is_admin = False
+        
+        # Define o usuário admin como administrador
+        admin = Usuario.query.filter_by(username='admin').first()
+        if admin:
+            admin.is_admin = True
+        
+        db.session.commit()
         print("Coluna is_admin adicionada com sucesso!")
-    except sqlite3.OperationalError as e:
-        if "duplicate column name" in str(e):
-            print("A coluna is_admin já existe!")
-        else:
-            print(f"Erro ao adicionar coluna: {e}")
-    finally:
-        conn.close()
 
 if __name__ == "__main__":
     add_admin_column() 

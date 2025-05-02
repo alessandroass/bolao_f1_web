@@ -1,41 +1,33 @@
-import sqlite3
-import os
-from werkzeug.security import generate_password_hash
+from flask import Flask
+from models import db, Usuario
+from config import Config
 
-# Caminho do banco de dados
-DB_PATH = os.path.join(os.getenv('RENDER_PROJECT_ROOT', ''), 'data', 'bolao_f1.db')
-
-# Função auxiliar para gerenciar conexões com o banco de dados
-def get_db_connection():
-    # Garante que o diretório data existe
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+app = Flask(__name__)
+app.config.from_object(Config)
+db.init_app(app)
 
 def create_admin():
-    conn = get_db_connection()
-    c = conn.cursor()
-    
-    try:
-        # Verifica se o usuário admin já existe
-        c.execute('SELECT id FROM usuarios WHERE username = ?', ('admin',))
-        if c.fetchone() is None:
-            # Insere o usuário admin
-            c.execute('''INSERT INTO usuarios 
-                        (username, first_name, password, is_admin) 
-                        VALUES (?, ?, ?, ?)''',
-                     ('admin', 'Administrador', 
-                      generate_password_hash('admin8163'), 
-                      1))
-            conn.commit()
-            print("Usuário administrador criado com sucesso!")
-        else:
-            print("Usuário administrador já existe!")
-    except Exception as e:
-        print(f"Erro ao criar usuário administrador: {e}")
-    finally:
-        conn.close()
+    with app.app_context():
+        # Verifica se o admin já existe
+        admin = Usuario.query.filter_by(username='admin').first()
+        
+        if admin:
+            print("Usuário admin já existe!")
+            return
+        
+        # Cria um novo admin
+        admin = Usuario(
+            username='admin',
+            first_name='Administrador',
+            is_admin=True,
+            primeiro_login=True
+        )
+        admin.set_password('admin123')
+        db.session.add(admin)
+        db.session.commit()
+        print("Usuário admin criado com sucesso!")
+        print("Login: admin")
+        print("Senha: admin123")
 
 if __name__ == "__main__":
     create_admin() 

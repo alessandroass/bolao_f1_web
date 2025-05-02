@@ -1,44 +1,34 @@
-import sqlite3
-import os
+from flask import Flask
+from models import db, Usuario
+from config import Config
 from werkzeug.security import generate_password_hash
 
-# Caminho do banco de dados no Render
-DB_PATH = os.path.join(os.getenv('RENDER_PROJECT_ROOT', ''), 'data', 'bolao_f1.db')
+app = Flask(__name__)
+app.config.from_object(Config)
+db.init_app(app)
 
 def reset_admin_password():
-    # Garante que o diretório data existe
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    
-    conn = sqlite3.connect(DB_PATH)
-    c = conn.cursor()
-    
-    try:
-        # Verifica se o admin existe
-        c.execute('SELECT id FROM usuarios WHERE username = ?', ('admin',))
-        admin = c.fetchone()
+    with app.app_context():
+        # Verifica se o admin já existe
+        admin = Usuario.query.filter_by(username='admin').first()
         
-        if not admin:
-            # Cria o admin se não existir
-            c.execute('''INSERT INTO usuarios 
-                        (username, first_name, password, is_admin, primeiro_login) 
-                        VALUES (?, ?, ?, ?, ?)''',
-                     ('admin', 'Administrador', 
-                      generate_password_hash('admin8163'), 
-                      1, 0))
-            print("Admin criado com sucesso!")
+        if admin:
+            # Se existir, apenas reseta a senha
+            admin.set_password('admin123')
+            admin.primeiro_login = True
         else:
-            # Reseta a senha do admin sem afetar outros dados
-            c.execute('''UPDATE usuarios 
-                        SET password = ?, primeiro_login = 0 
-                        WHERE username = ? AND id = ?''',
-                     (generate_password_hash('admin8163'), 'admin', admin[0]))
-            print("Senha do admin resetada com sucesso!")
+            # Se não existir, cria um novo admin
+            admin = Usuario(
+                username='admin',
+                first_name='Administrador',
+                is_admin=True,
+                primeiro_login=True
+            )
+            admin.set_password('admin123')
+            db.session.add(admin)
         
-        conn.commit()
-    except Exception as e:
-        print(f"Erro ao resetar senha do admin: {e}")
-    finally:
-        conn.close()
+        db.session.commit()
+        print("Senha do admin resetada com sucesso!")
 
 if __name__ == "__main__":
     reset_admin_password() 
