@@ -8,6 +8,7 @@ import pytz
 from models import db, Usuario, Piloto, Palpite, Resposta, Pontuacao, ConfigVotacao, GP
 from config import Config
 from reset_admin import reset_admin_password  # Importando a função de reset do admin
+from werkzeug.security import generate_password_hash, check_password_hash
 import psycopg2
 import sqlite3
 
@@ -752,12 +753,16 @@ def redefinir_senha():
             flash('As senhas não coincidem!', 'error')
             return redirect(url_for('redefinir_senha'))
         
-        conn = get_db_connection()
-        c = conn.cursor()
-        c.execute('UPDATE usuarios SET password = ?, primeiro_login = 0 WHERE id = ?',
-                 (generate_password_hash(nova_senha), session['user_id']))
-        conn.commit()
-        conn.close()
+        # Busca o usuário
+        usuario = Usuario.query.get(session['user_id'])
+        if not usuario:
+            flash('Usuário não encontrado!', 'error')
+            return redirect(url_for('login'))
+        
+        # Atualiza a senha e define primeiro_login como False
+        usuario.set_password(nova_senha)
+        usuario.primeiro_login = False
+        db.session.commit()
         
         flash('Senha redefinida com sucesso!', 'success')
         return redirect(url_for('tela_gps'))
