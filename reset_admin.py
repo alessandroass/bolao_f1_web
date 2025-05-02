@@ -27,11 +27,11 @@ def reset_admin_password():
                       1, 0))
             print("Admin criado com sucesso!")
         else:
-            # Reseta a senha do admin
+            # Reseta a senha do admin sem afetar outros dados
             c.execute('''UPDATE usuarios 
                         SET password = ?, primeiro_login = 0 
-                        WHERE username = ?''',
-                     (generate_password_hash('admin8163'), 'admin'))
+                        WHERE username = ? AND id = ?''',
+                     (generate_password_hash('admin8163'), 'admin', admin[0]))
             print("Senha do admin resetada com sucesso!")
         
         conn.commit()

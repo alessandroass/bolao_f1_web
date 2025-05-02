@@ -34,7 +34,17 @@ def verificar_banco_existe():
         print("Banco de dados criado com sucesso!")
     else:
         # Se o banco existe, apenas verifica se o admin existe
-        reset_admin_password()
+        try:
+            conn = get_db_connection()
+            c = conn.cursor()
+            c.execute('SELECT id FROM usuarios WHERE username = ?', ('admin',))
+            if not c.fetchone():
+                reset_admin_password()
+            conn.close()
+        except sqlite3.OperationalError:
+            # Se houver erro ao verificar o admin, recria as tabelas
+            create_tables()
+            reset_admin_password()
         print("Banco de dados já existe, apenas verificando admin...")
 
 # Verifica e inicializa o banco de dados

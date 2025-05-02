@@ -34,6 +34,17 @@ def create_tables():
                          (id INTEGER PRIMARY KEY AUTOINCREMENT,
                           nome TEXT UNIQUE NOT NULL)''')
             print("Tabela pilotos criada")
+            
+            # Insere os pilotos iniciais
+            pilotos_iniciais = [
+                "Max Verstappen", "Yuki Tsunoda", "Kimi Antonelli", "George Russell",
+                "Charles Leclerc", "Lewis Hamilton", "Lando Norris", "Oscar Piastri",
+                "Fernando Alonso", "Lance Stroll", "Liam Lawson", "Isack Hadjar",
+                "Pierre Gasly", "Jack Doohan", "Niko Hulkenberg", "Gabriel Bortoleto",
+                "Esteban Ocon", "Oliver Bearman", "Carlos Sainz", "Alexander Albon"
+            ]
+            for piloto in pilotos_iniciais:
+                c.execute('INSERT OR IGNORE INTO pilotos (nome) VALUES (?)', (piloto,))
         
         # Verifica se a tabela palpites existe
         c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='palpites'")
@@ -87,6 +98,22 @@ def create_tables():
                           posicao INTEGER UNIQUE NOT NULL,
                           pontos INTEGER NOT NULL)''')
             print("Tabela pontuacao criada")
+            
+            # Insere valores padrão de pontuação
+            valores_padrao = [
+                (0, 5),   # Pole Position
+                (1, 25),  # 1º lugar
+                (2, 18),  # 2º lugar
+                (3, 15),  # 3º lugar
+                (4, 12),  # 4º lugar
+                (5, 10),  # 5º lugar
+                (6, 8),   # 6º lugar
+                (7, 6),   # 7º lugar
+                (8, 4),   # 8º lugar
+                (9, 2),   # 9º lugar
+                (10, 1)   # 10º lugar
+            ]
+            c.executemany('INSERT OR IGNORE INTO pontuacao (posicao, pontos) VALUES (?, ?)', valores_padrao)
         
         # Verifica se a tabela config_votacao existe
         c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='config_votacao'")
