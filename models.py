@@ -15,7 +15,7 @@ class Usuario(db.Model):
     primeiro_login = db.Column(db.Boolean, default=True)
     
     def set_password(self, password):
-        self.password = generate_password_hash(password)
+        self.password = generate_password_hash(password, method='pbkdf2:sha256')
         
     def check_password(self, password):
         return check_password_hash(self.password, password)
