@@ -7,9 +7,13 @@ import random
 import string
 from datetime import datetime, timedelta
 import pytz
+from init_db import init_database  # Importando a função de inicialização
 
 app = Flask(__name__)
 app.secret_key = 'sua_chave_secreta_aqui'
+
+# Inicializa o banco de dados
+init_database()
 
 # Caminho do banco de dados
 DB_PATH = os.path.join(os.getenv('RENDER_PROJECT_ROOT', ''), 'data', 'bolao_f1.db')
@@ -188,9 +192,6 @@ def init_db():
     
     conn.commit()
     conn.close()
-
-# Inicializa o banco de dados
-init_db()
 
 # Decorator para verificar se o usuário é admin
 def admin_required(f):
