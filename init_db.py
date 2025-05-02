@@ -50,6 +50,27 @@ def init_database():
                       is_admin BOOLEAN DEFAULT 0,
                       primeiro_login BOOLEAN DEFAULT 1)''')
         
+        # Cria a tabela de pilotos se não existir
+        c.execute('''CREATE TABLE IF NOT EXISTS pilotos
+                     (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                      nome TEXT UNIQUE NOT NULL)''')
+        
+        # Verifica se a tabela de pilotos está vazia
+        c.execute('SELECT COUNT(*) FROM pilotos')
+        if c.fetchone()[0] == 0:
+            # Lista correta de pilotos
+            pilotos_iniciais = [
+                "Max Verstappen", "Yuki Tsunoda", "Kimi Antonelli", "George Russell",
+                "Charles Leclerc", "Lewis Hamilton", "Lando Norris", "Oscar Piastri",
+                "Fernando Alonso", "Lance Stroll", "Liam Lawson", "Isack Hadjar",
+                "Pierre Gasly", "Jack Doohan", "Niko Hulkenberg", "Gabriel Bortoleto",
+                "Esteban Ocon", "Oliver Bearman", "Carlos Sainz", "Alexander Albon"
+            ]
+            
+            # Insere os pilotos iniciais
+            for piloto in pilotos_iniciais:
+                c.execute('INSERT INTO pilotos (nome) VALUES (?)', (piloto,))
+        
         # Cria a tabela de palpites se não existir
         c.execute('''CREATE TABLE IF NOT EXISTS palpites
                      (id INTEGER PRIMARY KEY AUTOINCREMENT,
