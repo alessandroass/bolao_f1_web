@@ -212,7 +212,8 @@ def tela_gps():
     
     return render_template('tela_gps.html', 
                          gps=gps_com_palpites, 
-                         is_admin=session.get('is_admin', False))
+                         is_admin=session.get('is_admin', False),
+                         date_now=hoje)
 
 # Rota da tela de palpites para cada GP
 @app.route('/gp/<nome_gp>', methods=['GET', 'POST'])
