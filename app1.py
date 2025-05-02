@@ -8,9 +8,13 @@ import string
 from datetime import datetime, timedelta
 import pytz
 from reset_admin import reset_admin_password  # Importando a função de reset do admin
+from create_tables import create_tables  # Importando a função de criação de tabelas
 
 app = Flask(__name__)
 app.secret_key = 'sua_chave_secreta_aqui'
+
+# Cria as tabelas necessárias
+create_tables()
 
 # Reseta a senha do admin
 reset_admin_password()
@@ -42,7 +46,7 @@ gps_2025 = [
     ("reino-unido", "🇬🇧 Reino Unido (Silverstone)", "06/07/2025", "11:00", "05/07/2025", "11:00"),
     ("belgica", "🇧🇪 Bélgica (Spa-Francorchamps)", "27/07/2025", "10:00", "26/07/2025", "11:00"),
     ("hungria", "🇭🇺 Hungria (Budapeste)", "03/08/2025", "10:00", "02/08/2025", "11:00"),
-    ("paises-baixos", "🇳�� Holanda (Zandvoort)", "31/08/2025", "10:00", "30/08/2025", "10:00"),
+    ("paises-baixos", "🇳 Holanda (Zandvoort)", "31/08/2025", "10:00", "30/08/2025", "10:00"),
     ("monza", "🇮🇹 Itália (Monza)", "07/09/2025", "10:00", "06/09/2025", "11:00"),
     ("azerbaijao", "🇦🇿 Azerbaijão (Baku)", "21/09/2025", "08:00", "20/09/2025", "09:00"),
     ("singapura", "🇸🇬 Singapura (Marina Bay)", "05/10/2025", "09:00", "04/10/2025", "10:00"),
