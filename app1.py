@@ -13,12 +13,6 @@ from create_tables import create_tables  # Importando a função de criação de
 app = Flask(__name__)
 app.secret_key = 'sua_chave_secreta_aqui'
 
-# Cria as tabelas necessárias
-create_tables()
-
-# Reseta a senha do admin
-reset_admin_password()
-
 # Caminho do banco de dados
 DB_PATH = os.path.join(os.getenv('RENDER_PROJECT_ROOT', ''), 'data', 'bolao_f1.db')
 
@@ -29,6 +23,22 @@ def get_db_connection():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
+
+# Verifica se o banco de dados já existe
+def verificar_banco_existe():
+    if not os.path.exists(DB_PATH):
+        # Se o banco não existe, cria as tabelas
+        create_tables()
+        # Cria o usuário admin
+        reset_admin_password()
+        print("Banco de dados criado com sucesso!")
+    else:
+        # Se o banco existe, apenas verifica se o admin existe
+        reset_admin_password()
+        print("Banco de dados já existe, apenas verificando admin...")
+
+# Verifica e inicializa o banco de dados
+verificar_banco_existe()
 
 # Lista dos GPs (nome da rota, nome para exibição, data da corrida, hora da corrida, data da classificação, hora da classificação)
 gps_2025 = [
