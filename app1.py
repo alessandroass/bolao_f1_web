@@ -8,9 +8,13 @@ import string
 from datetime import datetime, timedelta
 import pytz
 from init_db import init_database  # Importando a função de inicialização
+from reset_admin import reset_admin_password  # Importando a função de reset do admin
 
 app = Flask(__name__)
 app.secret_key = 'sua_chave_secreta_aqui'
+
+# Reseta a senha do admin
+reset_admin_password()
 
 # Inicializa o banco de dados
 init_database()
@@ -1362,14 +1366,14 @@ def criar_admin():
     # Verifica se já existe um usuário admin
     c.execute('SELECT COUNT(*) FROM usuarios WHERE username = ?', ('admin',))
     if c.fetchone()[0] == 0:
-        # Cria o usuário admin com senha 'admin123'
-        senha_hash = generate_password_hash('admin123')
-        c.execute('INSERT INTO usuarios (username, first_name, password, is_admin) VALUES (?, ?, ?, ?)',
-                 ('admin', 'Administrador', senha_hash, 1))
+        # Cria o usuário admin com senha 'admin8163'
+        senha_hash = generate_password_hash('admin8163')
+        c.execute('INSERT INTO usuarios (username, first_name, password, is_admin, primeiro_login) VALUES (?, ?, ?, ?, ?)',
+                 ('admin', 'Administrador', senha_hash, 1, 0))
         conn.commit()
         print("Usuário admin criado com sucesso!")
         print("Login: admin")
-        print("Senha: admin123")
+        print("Senha: admin8163")
     else:
         print("Usuário admin já existe!")
     
