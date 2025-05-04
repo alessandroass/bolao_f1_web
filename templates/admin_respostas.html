@@ -30,7 +30,7 @@
                     <select id="pole_position" name="pole_position" class="pole-position" required>
                         <option value="">Selecione o piloto</option>
                         {% for piloto in grid_2025 %}
-                        <option value="{{ piloto }}" {% if resposta and resposta[10] == piloto %}selected{% endif %}>{{ piloto }}</option>
+                        <option value="{{ piloto }}" {% if resposta and resposta.pole == piloto %}selected{% endif %}>{{ piloto }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -41,7 +41,7 @@
                     <select name="pos{{ pos }}" id="pos{{ pos }}" required>
                         <option value="">Selecione o piloto</option>
                         {% for piloto in grid_2025 %}
-                        <option value="{{ piloto }}" {% if resposta and resposta[pos-1] == piloto %}selected{% endif %}>{{ piloto }}</option>
+                        <option value="{{ piloto }}" {% if resposta and resposta['pos_' ~ pos] == piloto %}selected{% endif %}>{{ piloto }}</option>
                         {% endfor %}
                     </select>
                 </div>

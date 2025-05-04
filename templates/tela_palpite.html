@@ -230,10 +230,10 @@
                 <div class="pole-position">
                     <h2 class="titulo-secao">Pole Position</h2>
                     <div class="select-container">
-                        <select name="pole" {% if modo_visualizacao or (palpite and palpite[10]) or not pole_habilitado %}disabled{% endif %}>
+                        <select name="pole" {% if modo_visualizacao or (palpite and palpite.pole) or not pole_habilitado %}disabled{% endif %}>
                             <option value="">-- Escolha --</option>
                             {% for piloto in grid_2025 %}
-                            <option value="{{ piloto }}" {% if palpite and palpite[10] == piloto %}selected{% endif %}>{{ piloto }}</option>
+                            <option value="{{ piloto }}" {% if palpite and palpite.pole == piloto or request.form.get('pole') == piloto %}selected{% endif %}>{{ piloto }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -247,10 +247,10 @@
                         <div class="posicao primeiro">
                             <div class="select-container">
                                 <label>1º Colocado</label>
-                                <select name="pos_1" {% if modo_visualizacao or (palpite and palpite[0]) or not posicoes_habilitado %}disabled{% endif %}>
+                                <select name="pos_1" {% if modo_visualizacao or (palpite and palpite.pos_1) or not posicoes_habilitado %}disabled{% endif %}>
                                     <option value="">-- Escolha --</option>
                                     {% for piloto in grid_2025 %}
-                                    <option value="{{ piloto }}" {% if palpite and palpite[0] == piloto %}selected{% endif %}>{{ piloto }}</option>
+                                    <option value="{{ piloto }}" {% if palpite and palpite.pos_1 == piloto or request.form.get('pos_1') == piloto %}selected{% endif %}>{{ piloto }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
@@ -258,10 +258,10 @@
                         <div class="posicao segundo">
                             <div class="select-container">
                                 <label>2º Colocado</label>
-                                <select name="pos_2" {% if modo_visualizacao or (palpite and palpite[1]) or not posicoes_habilitado %}disabled{% endif %}>
+                                <select name="pos_2" {% if modo_visualizacao or (palpite and palpite.pos_2) or not posicoes_habilitado %}disabled{% endif %}>
                                     <option value="">-- Escolha --</option>
                                     {% for piloto in grid_2025 %}
-                                    <option value="{{ piloto }}" {% if palpite and palpite[1] == piloto %}selected{% endif %}>{{ piloto }}</option>
+                                    <option value="{{ piloto }}" {% if palpite and palpite.pos_2 == piloto or request.form.get('pos_2') == piloto %}selected{% endif %}>{{ piloto }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
@@ -269,10 +269,10 @@
                         <div class="posicao terceiro">
                             <div class="select-container">
                                 <label>3º Colocado</label>
-                                <select name="pos_3" {% if modo_visualizacao or (palpite and palpite[2]) or not posicoes_habilitado %}disabled{% endif %}>
+                                <select name="pos_3" {% if modo_visualizacao or (palpite and palpite.pos_3) or not posicoes_habilitado %}disabled{% endif %}>
                                     <option value="">-- Escolha --</option>
                                     {% for piloto in grid_2025 %}
-                                    <option value="{{ piloto }}" {% if palpite and palpite[2] == piloto %}selected{% endif %}>{{ piloto }}</option>
+                                    <option value="{{ piloto }}" {% if palpite and palpite.pos_3 == piloto or request.form.get('pos_3') == piloto %}selected{% endif %}>{{ piloto }}</option>
                                     {% endfor %}
                                 </select>
                             </div>
@@ -290,10 +290,10 @@
                             <div class="posicao">
                                 <div class="select-container">
                                     <label>{{ i }}º Colocado</label>
-                                    <select name="pos_{{ i }}" {% if modo_visualizacao or (palpite and palpite[i-1]) or not posicoes_habilitado %}disabled{% endif %}>
+                                    <select name="pos_{{ i }}" {% if modo_visualizacao or (palpite and palpite['pos_' ~ i]) or not posicoes_habilitado %}disabled{% endif %}>
                                         <option value="">-- Escolha --</option>
                                         {% for piloto in grid_2025 %}
-                                        <option value="{{ piloto }}" {% if palpite and palpite[i-1] == piloto %}selected{% endif %}>{{ piloto }}</option>
+                                        <option value="{{ piloto }}" {% if palpite and palpite['pos_' ~ i] == piloto or request.form.get('pos_' + i|string) == piloto %}selected{% endif %}>{{ piloto }}</option>
                                         {% endfor %}
                                     </select>
                                 </div>
@@ -302,10 +302,10 @@
                             <div class="posicao">
                                 <div class="select-container">
                                     <label>{{ i+1 }}º Colocado</label>
-                                    <select name="pos_{{ i+1 }}" {% if modo_visualizacao or (palpite and palpite[i]) or not posicoes_habilitado %}disabled{% endif %}>
+                                    <select name="pos_{{ i+1 }}" {% if modo_visualizacao or (palpite and palpite['pos_' ~ (i+1)]) or not posicoes_habilitado %}disabled{% endif %}>
                                         <option value="">-- Escolha --</option>
                                         {% for piloto in grid_2025 %}
-                                        <option value="{{ piloto }}" {% if palpite and palpite[i] == piloto %}selected{% endif %}>{{ piloto }}</option>
+                                        <option value="{{ piloto }}" {% if palpite and palpite['pos_' ~ (i+1)] == piloto or request.form.get('pos_' + (i+1)|string) == piloto %}selected{% endif %}>{{ piloto }}</option>
                                         {% endfor %}
                                     </select>
                                 </div>
@@ -318,7 +318,7 @@
             </div>
 
             <div class="botoes">
-                {% if not modo_visualizacao and not (palpite and palpite[0]) and (pole_habilitado or posicoes_habilitado) %}
+                {% if not modo_visualizacao and not (palpite and palpite.pos_1) and (pole_habilitado or posicoes_habilitado) %}
                 <button type="submit" class="salvar-btn">Salvar Palpite</button>
                 {% endif %}
                 <a href="{{ url_for('tela_gps') }}" class="voltar-btn">Voltar</a>

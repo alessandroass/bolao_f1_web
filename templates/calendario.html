@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+
+{% block title %}Bolão F1 2025 - Calendário{% endblock %}
+
+{% block content %}
+  <div class="container">
+    <div class="header">
+      <a href="{{ url_for('tela_gps') }}" class="back-button">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+      </a>
+      <h1 class="title">CALENDÁRIO F1 2025</h1>
+    </div>
+
+    <div class="calendar-grid">
+      {% for gp in gps %}
+      <div class="calendar-card {% if gp.esta_proximo %}proximo{% endif %} {% if gp.data_corrida < date_now %}passado{% endif %}">
+        <div class="calendar-header">
+          <h3>{{ gp.nome }}</h3>
+          <div class="calendar-dates">
+            <div class="date-item">
+              <span class="date-label">Classificação:</span>
+              <span class="date-value">{{ gp.data_classificacao }} - {{ gp.hora_classificacao }}</span>
+            </div>
+            <div class="date-item">
+              <span class="date-label">Corrida:</span>
+              <span class="date-value">{{ gp.data_corrida.strftime('%d/%m/%Y') }} - {{ gp.hora_corrida }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <style>
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 30px;
+      position: relative;
+      padding-top: 20px;
+    }
+    
+    .title {
+      font-size: 2em;
+      color: #e10600;
+      font-family: 'Formula1', sans-serif;
+      margin: 0 auto;
+    }
+
+    .back-button {
+      position: absolute;
+      left: 0;
+      padding: 8px;
+      background: rgba(26, 26, 26, 0.8);
+      border-radius: 50%;
+      cursor: pointer;
+      transition: background 0.3s;
+      z-index: 10;
+    }
+
+    .back-button:hover {
+      background: rgba(26, 26, 26, 1);
+      transform: translateY(-2px);
+    }
+
+    .back-button svg {
+      width: 24px;
+      height: 24px;
+      color: #e10600;
+    }
+    
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    
+    .calendar-card {
+      background-color: #1a1a1a;
+      padding: 20px;
+      border-radius: 10px;
+      transition: transform 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .calendar-card.passado {
+      background-color: #1a1a1a;
+      border: 1px solid #333;
+      opacity: 0.6;
+      filter: grayscale(50%);
+    }
+
+    .calendar-card.passado:hover {
+      opacity: 0.7;
+    }
+
+    .calendar-card.passado h3 {
+      color: #666;
+    }
+
+    .calendar-card.passado .date-value {
+      color: #666;
+    }
+
+    .calendar-card.passado .calendar-button {
+      background-color: #333;
+      color: #666;
+    }
+
+    .calendar-card.passado .calendar-button:hover {
+      background-color: #444;
+      color: #888;
+    }
+
+    .calendar-card.proximo {
+      background-color: #1a3a1a;
+      border: 2px solid #2ecc71;
+    }
+
+    .calendar-card.proximo:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 0 15px rgba(46, 204, 113, 0.5);
+    }
+
+    .calendar-card:not(.passado):not(.proximo):hover {
+      transform: translateY(-5px);
+      box-shadow: 0 0 15px rgba(225, 6, 0, 0.5);
+    }
+    
+    .calendar-header {
+      margin-bottom: 20px;
+    }
+    
+    .calendar-card h3 {
+      margin: 0 0 15px 0;
+      color: white;
+      font-family: 'Formula1', sans-serif;
+    }
+    
+    .calendar-dates {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .date-item {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .date-label {
+      color: #e10600;
+      font-size: 0.55em;
+      font-weight: bold;
+      min-width: 100px;
+      max-width: 100px;
+      padding-right: 12px;
+      line-height: 1.2;
+    }
+
+    .date-value {
+      color: white;
+      font-size: 0.6em;
+      white-space: normal;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+      line-height: 1.2;
+      word-break: break-word;
+      padding-left: 25px;
+    }
+    
+    .calendar-button {
+      display: inline-block;
+      padding: 10px 20px;
+      background-color: #e10600;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      transition: all 0.3s;
+      font-family: 'Formula1', sans-serif;
+      text-align: center;
+      margin-top: 15px;
+    }
+    
+    .calendar-button:hover {
+      background-color: #b80000;
+      transform: translateY(-2px);
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        padding: 6px;
+        width: 100%;
+        box-sizing: border-box;
+        overflow-x: hidden;
+      }
+
+      .header {
+        padding-top: 12px;
+        width: 100%;
+      }
+
+      .title {
+        font-size: 1.1em;
+        padding: 0 4px;
+      }
+
+      .calendar-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 4px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .calendar-card {
+        padding: 4px;
+        min-height: 100px;
+        max-width: 100%;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .calendar-header {
+        margin-bottom: 2px;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+
+      .calendar-card h3 {
+        font-size: 0.7em;
+        margin-bottom: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .calendar-dates {
+        gap: 2px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        flex: 1;
+      }
+
+      .date-item {
+        gap: 1px;
+        flex-direction: row;
+        align-items: flex-start;
+        flex-wrap: nowrap;
+        margin-bottom: 2px;
+      }
+
+      .date-label {
+        font-size: 0.55em;
+        min-width: 35px;
+        max-width: 35px;
+        padding-right: 2px;
+        line-height: 1.2;
+      }
+
+      .date-value {
+        font-size: 0.6em;
+        white-space: normal;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex: 1;
+        line-height: 1.2;
+        word-break: break-word;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .calendar-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 3px;
+      }
+
+      .calendar-card {
+        padding: 3px;
+        min-height: 90px;
+      }
+
+      .calendar-card h3 {
+        font-size: 0.65em;
+      }
+
+      .date-label {
+        font-size: 0.5em;
+        min-width: 30px;
+        max-width: 30px;
+      }
+
+      .date-value {
+        font-size: 0.55em;
+      }
+    }
+
+    /* Ajustes específicos para o S24 Ultra */
+    @media (min-width: 480px) and (max-width: 768px) {
+      .container {
+        padding: 4px;
+      }
+
+      .calendar-grid {
+        gap: 3px;
+      }
+
+      .calendar-card {
+        padding: 3px;
+        min-height: 90px;
+      }
+
+      .calendar-card h3 {
+        font-size: 0.65em;
+      }
+
+      .date-label {
+        font-size: 0.5em;
+        min-width: 30px;
+        max-width: 30px;
+      }
+
+      .date-value {
+        font-size: 0.55em;
+      }
+    }
+  </style>
+{% endblock %} 

@@ -7,13 +7,31 @@ from datetime import datetime, timedelta
 import pytz
 from models import db, Usuario, Piloto, Palpite, Resposta, Pontuacao, ConfigVotacao, GP
 from config import Config
+from config_local import ConfigLocal
 from reset_admin import reset_admin_password  # Importando a função de reset do admin
 from werkzeug.security import generate_password_hash, check_password_hash
 import psycopg2
 import sqlite3
 
 app = Flask(__name__)
-app.config.from_object(Config)
+
+# Verifica se está rodando localmente (desenvolvimento) ou no Render (produção)
+if os.getenv('FLASK_ENV') == 'development':
+    app.config.from_object(ConfigLocal)
+    print("Rodando em modo de desenvolvimento local")
+    # Força a codificação UTF-8 para desenvolvimento local
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:ale81635721@localhost:5432/bolao_f1'
+else:
+    app.config.from_object(Config)
+    print("Rodando em modo de produção (Render)")
+
+# Configurações adicionais do SQLAlchemy
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'connect_args': {
+        'client_encoding': 'utf8'
+    }
+}
+
 db.init_app(app)
 
 def create_tables():
@@ -34,7 +52,34 @@ def create_tables():
             db.session.commit()
             print("Tabela de pontuação inicializada com sucesso!")
 
-# Função para verificar e inicializar o banco de dados
+def sincronizar_gps_banco():
+    """Sincroniza a lista gps_2025 com o banco de dados."""
+    try:
+        for slug, nome, data_corrida, hora_corrida, data_classificacao, hora_classificacao in gps_2025:
+            gp = GP.query.filter_by(slug=slug).first()
+            if not gp:
+                gp = GP(
+                    slug=slug,
+                    nome=nome,
+                    data_corrida=data_corrida,
+                    hora_corrida=hora_corrida,
+                    data_classificacao=data_classificacao,
+                    hora_classificacao=hora_classificacao
+                )
+                db.session.add(gp)
+            else:
+                gp.nome = nome
+                gp.data_corrida = data_corrida
+                gp.hora_corrida = hora_corrida
+                gp.data_classificacao = data_classificacao
+                gp.hora_classificacao = hora_classificacao
+        
+        db.session.commit()
+        print("GPs sincronizados com sucesso!")
+    except Exception as e:
+        print(f"Erro ao sincronizar GPs: {str(e)}")
+        db.session.rollback()
+
 def verificar_banco_existe():
     with app.app_context():
         # Cria as tabelas se não existirem
@@ -47,13 +92,16 @@ def verificar_banco_existe():
             print("Usuário admin criado com sucesso!")
         else:
             print("Banco de dados já existe, apenas verificando admin...")
+        
+        # Sincroniza os GPs com o banco de dados
+        sincronizar_gps_banco()
 
 # Verifica e inicializa o banco de dados
 verificar_banco_existe()
 
 # Lista dos GPs (nome da rota, nome para exibição, data da corrida, hora da corrida, data da classificação, hora da classificação)
 gps_2025 = [
-    ("australia", "🇦🇺 Austrália (Melbourne)", "02/05/2025", "20:00", "15/03/2025", "02:00"),
+    ("australia", "🇦🇺 Austrália (Melbourne)", "16/03/2025", "01:00", "15/03/2025", "02:00"),
     ("china", "🇨🇳 China (Xangai)", "23/03/2025", "04:00", "22/03/2025", "04:00"),
     ("japao", "🇯🇵 Japão (Suzuka)", "06/04/2025", "02:00", "05/04/2025", "03:00"),
     ("bahrein", "🇧🇭 Bahrein (Sakhir)", "13/04/2025", "12:00", "12/04/2025", "13:00"),
@@ -183,11 +231,69 @@ def tela_gps():
     # Data atual no fuso horário de Brasília
     hoje = datetime.now(tz_brasilia).date()
     
-    # Buscar a posição e pontuação do usuário
+    # Buscar o usuário
     usuario = Usuario.query.get(session['user_id'])
     
     # Buscar todos os palpites do usuário
     palpites_existentes = [p.gp_slug for p in usuario.palpites]
+    
+    # Buscar todos os palpites e respostas para calcular a pontuação
+    palpites = Palpite.query.filter_by(usuario_id=usuario.id).all()
+    respostas = {r.gp_slug: r for r in Resposta.query.all()}
+    pontuacao = {p.posicao: p.pontos for p in Pontuacao.query.all()}
+    
+    # Calcular pontuação total do usuário
+    pontos_total = 0
+    for palpite in palpites:
+        resposta = respostas.get(palpite.gp_slug)
+        if resposta:
+            # Verifica pole position
+            if palpite.pole == resposta.pole and resposta.pole is not None:
+                pontos_total += pontuacao.get(0, 5)
+            
+            # Verifica posições
+            for i in range(1, 11):
+                palpite_pos = getattr(palpite, f'pos_{i}')
+                resposta_pos = getattr(resposta, f'pos_{i}')
+                if palpite_pos == resposta_pos and resposta_pos is not None:
+                    pontos_total += pontuacao.get(i, 0)
+    
+    # Buscar todos os usuários para calcular a posição
+    usuarios = Usuario.query.filter(Usuario.username != 'admin').all()
+    classificacao = []
+    
+    for user in usuarios:
+        pontos_user = 0
+        palpites_user = Palpite.query.filter_by(usuario_id=user.id).all()
+        
+        for palpite in palpites_user:
+            resposta = respostas.get(palpite.gp_slug)
+            if resposta:
+                # Verifica pole position
+                if palpite.pole == resposta.pole and resposta.pole is not None:
+                    pontos_user += pontuacao.get(0, 5)
+                
+                # Verifica posições
+                for i in range(1, 11):
+                    palpite_pos = getattr(palpite, f'pos_{i}')
+                    resposta_pos = getattr(resposta, f'pos_{i}')
+                    if palpite_pos == resposta_pos and resposta_pos is not None:
+                        pontos_user += pontuacao.get(i, 0)
+        
+        classificacao.append({
+            'username': user.username,
+            'pontos': pontos_user
+        })
+    
+    # Ordenar por pontuação
+    classificacao.sort(key=lambda x: x['pontos'], reverse=True)
+    
+    # Encontrar posição do usuário
+    posicao = 1
+    for i, user in enumerate(classificacao):
+        if user['username'] == usuario.username:
+            posicao = i + 1
+            break
     
     # Criar lista de GPs com informação de palpite existente
     gps_com_palpites = []
@@ -213,7 +319,9 @@ def tela_gps():
     return render_template('tela_gps.html', 
                          gps=gps_com_palpites, 
                          is_admin=session.get('is_admin', False),
-                         date_now=hoje)
+                         date_now=hoje,
+                         pontos=pontos_total,
+                         posicao=posicao)
 
 # Rota da tela de palpites para cada GP
 @app.route('/gp/<nome_gp>', methods=['GET', 'POST'])
@@ -397,33 +505,17 @@ def calcular_pontos(palpite, resposta):
     if not resposta or len(resposta) < 12:  # Verifica se a resposta existe e tem pelo menos 12 elementos (pos_1 a pos_10 + pole)
         return pontos
     
+    # Busca a pontuação da tabela
+    pontuacao = {p.posicao: p.pontos for p in Pontuacao.query.all()}
+    
     # Verifica pole position
     if palpite[13] and resposta[11] and palpite[13] == resposta[11]:  # palpite.pole == resposta.pole
-        pontos += 5  # Pontos da pole position
+        pontos += pontuacao.get(0, 5)  # Usa 5 como valor padrão se não encontrar na tabela
     
     # Verifica posições
     for i in range(1, 11):
         if palpite[i+2] and resposta[i-1] and palpite[i+2] == resposta[i-1]:  # palpite.pos_X == resposta.pos_X
-            if i == 1:
-                pontos += 25
-            elif i == 2:
-                pontos += 18
-            elif i == 3:
-                pontos += 15
-            elif i == 4:
-                pontos += 12
-            elif i == 5:
-                pontos += 10
-            elif i == 6:
-                pontos += 8
-            elif i == 7:
-                pontos += 6
-            elif i == 8:
-                pontos += 4
-            elif i == 9:
-                pontos += 2
-            elif i == 10:
-                pontos += 1
+            pontos += pontuacao.get(i, 0)  # Usa 0 como valor padrão se não encontrar na tabela
     
     return pontos
 
@@ -432,7 +524,7 @@ def is_postgresql():
 
 def get_db_connection():
     if is_postgresql():
-        return psycopg2.connect(app.config['SQLALCHEMY_DATABASE_URI'])
+        return psycopg2.connect(app.config['SQLALCHEMY_DATABASE_URI'], client_encoding='utf8')
     else:
         return sqlite3.connect('data/bolao_f1.db')
 
@@ -472,11 +564,17 @@ def meus_resultados():
         
         total_geral += pontos_gp
         
+        # Adiciona a resposta ao objeto palpite
+        palpite.resposta = resposta
+        
         resultados.append({
             'gp': gp_nome,
             'palpite': palpite,
             'pontos': pontos_gp
         })
+    
+    # Ordena os resultados por data do GP (usando a ordem definida em gps_2025)
+    resultados.sort(key=lambda x: next((i for i, gp in enumerate(gps_2025) if gp[0] == x['palpite'].gp_slug), float('inf')))
     
     return render_template('meus_resultados.html', 
                          resultados=resultados, 
@@ -629,16 +727,15 @@ def admin_respostas(nome_gp):
         db.session.commit()
         flash('Respostas salvas com sucesso!', 'success')
         
-        # Busca a resposta atualizada para exibir na página
-        resposta = Resposta.query.filter_by(gp_slug=nome_gp).first()
-        
+        # Cria uma resposta temporária com os valores salvos
+        resposta_temp = posicoes + [pole]
         nome_gp_exibicao = next((nome for slug, nome, _, _, _, _ in gps_2025 if slug == nome_gp), "GP Desconhecido")
         
         return render_template('admin_respostas.html',
                              nome_gp=nome_gp,
                              nome_gp_exibicao=nome_gp_exibicao,
                              grid_2025=grid_2025,
-                             resposta=resposta)
+                             resposta=resposta_temp)
     
     # Busca resposta existente
     resposta = Resposta.query.filter_by(gp_slug=nome_gp).first()
@@ -1069,6 +1166,13 @@ def tela_palpite(gp_slug):
 @admin_required
 def admin_datas_gps():
     if request.method == 'POST':
+        # Se for uma requisição de sincronização
+        if request.form.get('action') == 'sincronizar':
+            sincronizar_gps_banco()
+            flash('GPs sincronizados com sucesso!', 'success')
+            return redirect(url_for('admin_datas_gps'))
+            
+        # Processamento normal do formulário
         conn = get_db_connection()
         c = conn.cursor()
         
@@ -1126,12 +1230,28 @@ def admin_datas_gps():
     for gp in gps_2025:
         slug = gp[0]
         datas = gps_datas.get(slug, {})
+        
+        # Converte as datas do formato DD/MM/YYYY para YYYY-MM-DD
+        data_corrida = datas.get('data_corrida', '')
+        if data_corrida:
+            try:
+                data_corrida = datetime.strptime(data_corrida, '%d/%m/%Y').strftime('%Y-%m-%d')
+            except:
+                data_corrida = ''
+        
+        data_classificacao = datas.get('data_classificacao', '')
+        if data_classificacao:
+            try:
+                data_classificacao = datetime.strptime(data_classificacao, '%d/%m/%Y').strftime('%Y-%m-%d')
+            except:
+                data_classificacao = ''
+        
         gps_com_datas.append({
             'slug': slug,
             'nome': gp[1],
-            'data_corrida': datas.get('data_corrida', ''),
+            'data_corrida': data_corrida,
             'hora_corrida': datas.get('hora_corrida', ''),
-            'data_classificacao': datas.get('data_classificacao', ''),
+            'data_classificacao': data_classificacao,
             'hora_classificacao': datas.get('hora_classificacao', '')
         })
     
@@ -1259,6 +1379,105 @@ def ranking():
     return render_template('ranking.html',
                          ranking=ranking,
                          total_gps=len(gps_com_respostas))
+
+@app.route('/admin/gerenciar-gps', methods=['GET', 'POST'])
+@admin_required
+def admin_gerenciar_gps():
+    if request.method == 'POST':
+        # Se for uma requisição de sincronização
+        if request.form.get('action') == 'sincronizar':
+            sincronizar_gps_banco()
+            flash('GPs sincronizados com sucesso!', 'success')
+            return redirect(url_for('admin_gerenciar_gps'))
+            
+        # Se for uma requisição de adicionar GP
+        if request.form.get('action') == 'add':
+            nome = request.form.get('nome')
+            data = request.form.get('data')
+            
+            if nome and data:
+                try:
+                    # Cria o slug a partir do nome
+                    slug = nome.lower().replace(' ', '-')
+                    
+                    # Verifica se o GP já existe
+                    gp = GP.query.filter_by(slug=slug).first()
+                    if not gp:
+                        gp = GP(
+                            slug=slug,
+                            nome=nome,
+                            data_corrida=data,
+                            hora_corrida="12:00",
+                            data_classificacao=data,
+                            hora_classificacao="12:00"
+                        )
+                        db.session.add(gp)
+                        db.session.commit()
+                        flash('GP adicionado com sucesso!', 'success')
+                    else:
+                        flash('Este GP já está cadastrado!', 'error')
+                except Exception as e:
+                    flash(f'Erro ao adicionar GP: {str(e)}', 'error')
+            
+        # Se for uma requisição de excluir GP
+        if request.form.get('action') == 'delete':
+            gp_id = request.form.get('gp_id')
+            if gp_id:
+                try:
+                    gp = GP.query.get(gp_id)
+                    if gp:
+                        db.session.delete(gp)
+                        db.session.commit()
+                        flash('GP excluído com sucesso!', 'success')
+                except Exception as e:
+                    flash(f'Erro ao excluir GP: {str(e)}', 'error')
+    
+    # Busca todos os GPs
+    gps = GP.query.all()
+    
+    return render_template('admin_gerenciar_gps.html', gps=gps)
+
+@app.route('/calendario')
+def calendario():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    # Definir o fuso horário de Brasília
+    tz_brasilia = pytz.timezone('America/Sao_Paulo')
+    
+    # Data atual no fuso horário de Brasília
+    hoje = datetime.now(tz_brasilia).date()
+    
+    # Buscar o usuário
+    usuario = Usuario.query.get(session['user_id'])
+    
+    # Buscar todos os palpites do usuário
+    palpites_existentes = [p.gp_slug for p in usuario.palpites]
+    
+    # Criar lista de GPs com informação de palpite existente
+    gps_com_palpites = []
+    for slug, nome, data_corrida, hora_corrida, data_classificacao, hora_classificacao in gps_2025:
+        # Converter a data da corrida para date
+        data_corrida_dt = datetime.strptime(data_corrida, '%d/%m/%Y').date()
+        
+        # Verificar se o GP está próximo (3 dias antes da corrida)
+        dias_para_corrida = (data_corrida_dt - hoje).days
+        esta_proximo = 0 <= dias_para_corrida <= 3
+        
+        gps_com_palpites.append({
+            'slug': slug,
+            'nome': nome,
+            'tem_palpite': slug in palpites_existentes,
+            'data_corrida': data_corrida_dt,
+            'hora_corrida': hora_corrida,
+            'data_classificacao': data_classificacao,
+            'hora_classificacao': hora_classificacao,
+            'esta_proximo': esta_proximo
+        })
+    
+    return render_template('calendario.html', 
+                         gps=gps_com_palpites,
+                         date_now=hoje)
 
 if __name__ == "__main__":
     criar_admin()  # Cria o usuário admin se não existir

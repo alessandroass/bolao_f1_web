@@ -6,7 +6,13 @@
 <div class="admin-container">
     <div class="admin-header">
         <h1 class="title">Gerenciar GPs</h1>
-        <a href="{{ url_for('admin') }}" class="back-button">Voltar</a>
+        <div class="header-buttons">
+            <form method="POST" style="display: inline;">
+                <input type="hidden" name="action" value="sincronizar">
+                <button type="submit" class="sync-button">Sincronizar GPs</button>
+            </form>
+            <a href="{{ url_for('admin') }}" class="back-button">Voltar</a>
+        </div>
     </div>
     
     <div class="admin-section">
@@ -30,20 +36,19 @@
             <h2>GPs Cadastrados</h2>
             <div class="gps-grid">
                 {% for gp in gps %}
-                <div class="gp-card">
+                <div class="gp-item">
                     <div class="gp-info">
                         <span class="gp-name">{{ gp.nome }}</span>
-                        <span class="gp-date">{{ gp.data }}</span>
+                        <div class="gp-dates">
+                            <span class="gp-date">Corrida: {{ gp.data_corrida }} às {{ gp.hora_corrida }}</span>
+                            <span class="gp-date">Classificação: {{ gp.data_classificacao }} às {{ gp.hora_classificacao }}</span>
+                        </div>
                     </div>
-                    <div class="gp-actions">
-                        <form method="POST" class="action-form">
-                            <input type="hidden" name="gp_id" value="{{ gp.id }}">
-                            <input type="hidden" name="action" value="delete">
-                            <button type="submit" class="action-button delete-button" onclick="return confirm('Tem certeza que deseja excluir este GP?')">
-                                Excluir
-                            </button>
-                        </form>
-                    </div>
+                    <form method="POST" action="{{ url_for('admin_gerenciar_gps') }}" class="gp-actions">
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="gp_id" value="{{ gp.id }}">
+                        <button type="submit" class="delete-btn">Excluir</button>
+                    </form>
                 </div>
                 {% endfor %}
             </div>
@@ -84,6 +89,23 @@
 
 .back-button:hover {
     background: rgba(225, 6, 0, 0.2);
+    transform: translateY(-2px);
+}
+
+.sync-button {
+    padding: 10px 20px;
+    background: rgba(0, 128, 255, 0.2);
+    color: #fff;
+    border: 1px solid #0080ff;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Formula1', sans-serif;
+    margin-right: 10px;
+}
+
+.sync-button:hover {
+    background: rgba(0, 128, 255, 0.3);
     transform: translateY(-2px);
 }
 
@@ -152,27 +174,46 @@
     gap: 15px;
 }
 
-.gp-card {
+.gp-item {
     background: rgba(255, 255, 255, 0.1);
     padding: 15px;
     border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .gp-info {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 15px;
+    flex-direction: column;
+    gap: 10px;
 }
 
 .gp-name {
     color: #fff;
     font-weight: bold;
+    font-size: 1.1em;
+}
+
+.gp-dates {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
 }
 
 .gp-date {
     color: #aaa;
     font-size: 0.9em;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.gp-date:before {
+    content: "•";
+    color: #e10600;
+    font-size: 1.2em;
 }
 
 .gp-actions {
@@ -180,26 +221,19 @@
     justify-content: flex-end;
 }
 
-.action-form {
-    margin: 0;
-}
-
-.action-button {
+.delete-btn {
     padding: 8px 15px;
     border: none;
     border-radius: 5px;
     cursor: pointer;
     transition: all 0.3s ease;
     font-family: 'Formula1', sans-serif;
-}
-
-.delete-button {
     background: rgba(255, 0, 0, 0.2);
     color: #fff;
     border: 1px solid #ff0000;
 }
 
-.delete-button:hover {
+.delete-btn:hover {
     background: rgba(255, 0, 0, 0.3);
 }
 
@@ -210,12 +244,30 @@
         text-align: center;
     }
     
+    .header-buttons {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+    }
+    
     .add-form {
         grid-template-columns: 1fr;
     }
     
     .gps-grid {
         grid-template-columns: 1fr;
+    }
+
+    .gp-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    .gp-actions {
+        width: 100%;
+        display: flex;
+        justify-content: flex-end;
     }
 }
 </style>

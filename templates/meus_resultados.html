@@ -38,10 +38,10 @@
                             <!-- Pole Position -->
                             <tr>
                                 <td>Pole</td>
-                                <td>{{ gp_resultado.palpite[13] or 'N/D' }}</td>
-                                <td>{{ gp_resultado.palpite[24] or 'S/R' }}</td>
+                                <td>{{ gp_resultado.palpite.pole or 'N/D' }}</td>
+                                <td>{{ gp_resultado.palpite.resposta.pole if gp_resultado.palpite.resposta else 'S/R' }}</td>
                                 <td>
-                                    {% if gp_resultado.palpite[13] == gp_resultado.palpite[24] and gp_resultado.palpite[24] is not none %}
+                                    {% if gp_resultado.palpite.pole == gp_resultado.palpite.resposta.pole and gp_resultado.palpite.resposta.pole is not none %}
                                         {{ pontuacao.get(0, 5) }}
                                     {% else %}
                                         0
@@ -53,10 +53,10 @@
                             {% for i in range(1, 11) %}
                                 <tr>
                                     <td>{{ i }}º</td>
-                                    <td>{{ gp_resultado.palpite[i+2] or 'N/D' }}</td>
-                                    <td>{{ gp_resultado.palpite[i+13] or 'S/R' }}</td>
+                                    <td>{{ gp_resultado.palpite['pos_' ~ i] or 'N/D' }}</td>
+                                    <td>{{ gp_resultado.palpite.resposta['pos_' ~ i] if gp_resultado.palpite.resposta else 'S/R' }}</td>
                                     <td>
-                                        {% if gp_resultado.palpite[i+2] == gp_resultado.palpite[i+13] and gp_resultado.palpite[i+13] is not none %}
+                                        {% if gp_resultado.palpite['pos_' ~ i] == gp_resultado.palpite.resposta['pos_' ~ i] and gp_resultado.palpite.resposta['pos_' ~ i] is not none %}
                                             {{ pontuacao.get(i, 0) }}
                                         {% else %}
                                             0
