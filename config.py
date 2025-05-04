@@ -6,7 +6,9 @@ load_dotenv()
 
 class Config:
     # Configuração do banco de dados PostgreSQL
-    DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://localhost/bolao_f1')
+    DATABASE_URL = os.getenv('DATABASE_URL')
+    if DATABASE_URL and DATABASE_URL.startswith('postgres://'):
+        DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
     SQLALCHEMY_DATABASE_URI = DATABASE_URL
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     

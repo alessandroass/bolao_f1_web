@@ -19,8 +19,6 @@ app = Flask(__name__)
 if os.getenv('FLASK_ENV') == 'development':
     app.config.from_object(ConfigLocal)
     print("Rodando em modo de desenvolvimento local")
-    # Força a codificação UTF-8 para desenvolvimento local
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:ale81635721@localhost:5432/bolao_f1'
 else:
     app.config.from_object(Config)
     print("Rodando em modo de produção (Render)")
