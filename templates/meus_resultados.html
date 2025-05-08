@@ -225,15 +225,45 @@
 }
 
 @media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+
+    .header-buttons {
+        justify-content: center;
+    }
+
     .gp-header {
         flex-direction: column;
-        align-items: flex-start;
+        align-items: center;
         gap: 10px;
+        text-align: center;
     }
     
     .pontuacao-total {
         width: 100%;
-        text-align: center;
+        text-align: center !important;
+        display: block !important;
+    }
+    
+    .pontuacao-geral {
+        width: 100%;
+        text-align: center !important;
+        display: block !important;
+        margin: 0 auto 30px auto;
+        padding: 15px;
+        box-sizing: border-box;
+    }
+    
+    .pontuacao-geral span,
+    .pontuacao-total span {
+        width: 100%;
+        text-align: center !important;
+        display: block !important;
+    }
+    
+    .total-label {
+        text-align: center !important;
     }
     
     .tabela-resultados th,
