@@ -23,7 +23,7 @@
                     {% for usuario in classificacao %}
                         <tr class="{% if loop.index == 1 %}primeiro{% elif loop.index == 2 %}segundo{% elif loop.index == 3 %}terceiro{% endif %}">
                             <td class="posicao">{{ loop.index }}º</td>
-                            <td class="usuario">{{ usuario.first_name }}</td>
+                            <td class="usuario">{{ usuario.username }}</td>
                             <td class="pontos">{{ usuario.total_pontos }}</td>
                         </tr>
                     {% endfor %}

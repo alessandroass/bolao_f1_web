@@ -9,26 +9,57 @@
         <a href="{{ url_for('admin') }}" class="back-button">Voltar</a>
     </div>
     
+    <div class="tabs">
+        <button class="tab-button active" data-tab="corridas">Corridas Principais</button>
+        <button class="tab-button" data-tab="sprints">Sprints</button>
+    </div>
+    
     <div class="admin-section">
-        <form method="POST" class="pontuacao-form">
-            <div class="pontuacao-grid">
-                <div class="pontuacao-item">
-                    <label>Pole Position</label>
-                    <input type="number" name="pontos_0" value="{{ pontuacao.get(0, 5) }}" min="0" required>
+        <!-- Aba Corridas Principais -->
+        <div class="tab-content active" id="corridas">
+            <form method="POST" class="pontuacao-form" action="{{ url_for('admin_pontuacao') }}">
+                <div class="pontuacao-grid">
+                    <div class="pontuacao-item">
+                        <label>Pole Position</label>
+                        <input type="number" name="pontos_0" value="{{ pontuacao.get(0, 5) }}" min="0" required>
+                    </div>
+                    {% for i in range(1, 11) %}
+                    <div class="pontuacao-item">
+                        <label>{{ i }}º Lugar</label>
+                        <input type="number" name="pontos_{{ i }}" value="{{ pontuacao.get(i, 0) }}" min="0" required>
+                    </div>
+                    {% endfor %}
                 </div>
-                {% for i in range(1, 11) %}
-                <div class="pontuacao-item">
-                    <label>{{ i }}º Lugar</label>
-                    <input type="number" name="pontos_{{ i }}" value="{{ pontuacao.get(i, 0) }}" min="0" required>
+                
+                <div class="botoes">
+                    <button type="submit" class="save-button">Salvar Pontuação</button>
+                    <a href="{{ url_for('admin') }}" class="cancel-button">Cancelar</a>
                 </div>
-                {% endfor %}
-            </div>
-            
-            <div class="botoes">
-                <button type="submit" class="save-button">Salvar Pontuação</button>
-                <a href="{{ url_for('admin') }}" class="cancel-button">Cancelar</a>
-            </div>
-        </form>
+            </form>
+        </div>
+
+        <!-- Aba Sprints -->
+        <div class="tab-content" id="sprints">
+            <form method="POST" class="pontuacao-form" action="{{ url_for('admin_pontuacao_sprint') }}">
+                <div class="pontuacao-grid">
+                    <div class="pontuacao-item">
+                        <label>Pole Position</label>
+                        <input type="number" name="pontos_0" value="{{ pontuacao_sprint.get(0, 1) }}" min="0" required>
+                    </div>
+                    {% for i in range(1, 9) %}
+                    <div class="pontuacao-item">
+                        <label>{{ i }}º Lugar</label>
+                        <input type="number" name="pontos_{{ i }}" value="{{ pontuacao_sprint.get(i, 0) }}" min="0" required>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="botoes">
+                    <button type="submit" class="save-button">Salvar Pontuação</button>
+                    <a href="{{ url_for('admin') }}" class="cancel-button">Cancelar</a>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -266,12 +297,49 @@
         font-size: 1.2em;
     }
 }
+
+.tabs {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.tab-button {
+    padding: 10px 20px;
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    border: 1px solid #e10600;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-family: 'Formula1', sans-serif;
+}
+
+.tab-button:hover {
+    background: rgba(225, 6, 0, 0.2);
+}
+
+.tab-button.active {
+    background: #e10600;
+    border-color: #e10600;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
 </style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const popup = document.getElementById('popup');
     const closePopup = document.querySelector('.close-popup');
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabContents = document.querySelectorAll('.tab-content');
     
     // Fecha o popup após 3 segundos
     if (popup.classList.contains('show')) {
@@ -283,6 +351,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // Fecha o popup ao clicar no X
     closePopup.addEventListener('click', () => {
         popup.classList.remove('show');
+    });
+
+    // Sistema de abas
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            // Remove active class de todos os botões e conteúdos
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            // Adiciona active class ao botão clicado e seu conteúdo correspondente
+            button.classList.add('active');
+            const tabId = button.getAttribute('data-tab');
+            document.getElementById(tabId).classList.add('active');
+        });
     });
 });
 </script>

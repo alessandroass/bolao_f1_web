@@ -91,4 +91,11 @@ class GP(db.Model):
     data_corrida = db.Column(db.String(10), nullable=False)
     hora_corrida = db.Column(db.String(5), nullable=False)
     data_classificacao = db.Column(db.String(10), nullable=False)
-    hora_classificacao = db.Column(db.String(5), nullable=False) 
+    hora_classificacao = db.Column(db.String(5), nullable=False)
+
+class PontuacaoSprint(db.Model):
+    __tablename__ = 'pontuacao_sprint'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    posicao = db.Column(db.Integer, unique=True, nullable=False)
+    pontos = db.Column(db.Integer, nullable=False) 

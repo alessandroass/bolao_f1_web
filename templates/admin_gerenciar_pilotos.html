@@ -26,9 +26,9 @@
             <div class="pilotos-grid">
                 {% for piloto in pilotos %}
                 <div class="piloto-card">
-                    <span>{{ piloto }}</span>
+                    <span>{{ piloto.nome }}</span>
                     <form method="POST" class="delete-form">
-                        <input type="hidden" name="piloto" value="{{ piloto }}">
+                        <input type="hidden" name="piloto" value="{{ piloto.nome }}">
                         <button type="submit" class="delete-button">Excluir</button>
                     </form>
                 </div>

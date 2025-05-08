@@ -21,7 +21,7 @@
           <div class="calendar-dates">
             <div class="date-item">
               <span class="date-label">Classificação:</span>
-              <span class="date-value">{{ gp.data_classificacao }} - {{ gp.hora_classificacao }}</span>
+              <span class="date-value">{{ gp.data_classificacao.strftime('%d/%m/%Y') }} - {{ gp.hora_classificacao }}</span>
             </div>
             <div class="date-item">
               <span class="date-label">Corrida:</span>

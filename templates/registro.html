@@ -7,7 +7,17 @@
 </head>
 <body class="registro-page">
     <div class="container">
-        <h1 class="titulo">🏎️ REGISTRO BOLÃO F1 🏎️</h1>
+        <h1 class="titulo"> REGISTRO BOLÃO F1 </h1>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
         
         <form method="POST" class="form-login">
             <div class="input-group">

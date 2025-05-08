@@ -5,7 +5,7 @@ import random
 import string
 from datetime import datetime, timedelta
 import pytz
-from models import db, Usuario, Piloto, Palpite, Resposta, Pontuacao, ConfigVotacao, GP
+from models import db, Usuario, Piloto, Palpite, Resposta, Pontuacao, ConfigVotacao, GP, PontuacaoSprint
 from config import Config
 from config_local import ConfigLocal
 from reset_admin import reset_admin_password  # Importando a função de reset do admin
@@ -26,7 +26,7 @@ else:
 # Configurações adicionais do SQLAlchemy
 app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
     'connect_args': {
-        'client_encoding': 'utf8'
+        'options': '-c client_encoding=utf8'
     }
 }
 
@@ -100,15 +100,18 @@ verificar_banco_existe()
 # Lista dos GPs (nome da rota, nome para exibição, data da corrida, hora da corrida, data da classificação, hora da classificação)
 gps_2025 = [
     ("australia", "🇦🇺 Austrália (Melbourne)", "16/03/2025", "01:00", "15/03/2025", "02:00"),
+    ("sprint-china", "🇨🇳 Sprint - China (Xangai)", "22/03/2025", "00:00", "21/03/2025", "04:30"),
     ("china", "🇨🇳 China (Xangai)", "23/03/2025", "04:00", "22/03/2025", "04:00"),
     ("japao", "🇯🇵 Japão (Suzuka)", "06/04/2025", "02:00", "05/04/2025", "03:00"),
     ("bahrein", "🇧🇭 Bahrein (Sakhir)", "13/04/2025", "12:00", "12/04/2025", "13:00"),
     ("arabia-saudita", "🇸🇦 Arábia Saudita (Jeddah)", "20/04/2025", "14:00", "19/04/2025", "14:00"),
+    ("sprint-miami", "🇺🇸 Sprint - Miami (EUA)", "03/05/2025", "13:00", "02/05/2025", "17:30"),
     ("miami", "🇺🇸 Miami (EUA)", "04/05/2025", "17:00", "03/05/2025", "17:00"),
     ("emilia-romagna", "🇮🇹 Emilia-Romagna (Imola)", "18/05/2025", "10:00", "17/05/2025", "11:00"),
     ("monaco", "🇲🇨 Mônaco (Monte Carlo)", "25/05/2025", "10:00", "24/05/2025", "11:00"),
     ("espanha", "🇪🇸 Espanha (Barcelona)", "22/06/2025", "10:00", "21/06/2025", "11:00"),
     ("canada", "🇨🇦 Canadá (Montreal)", "15/06/2025", "15:00", "14/06/2025", "17:00"),
+    ("sprint-austria", "🇦🇹 Sprint - Áustria (Spielberg)", "28/06/2025", "07:00", "27/06/2025", "11:30"),
     ("austria", "🇦🇹 Áustria (Spielberg)", "29/06/2025", "10:00", "28/06/2025", "11:00"),
     ("reino-unido", "🇬🇧 Reino Unido (Silverstone)", "06/07/2025", "11:00", "05/07/2025", "11:00"),
     ("belgica", "🇧🇪 Bélgica (Spa-Francorchamps)", "27/07/2025", "10:00", "26/07/2025", "11:00"),
@@ -117,10 +120,13 @@ gps_2025 = [
     ("monza", "🇮🇹 Itália (Monza)", "07/09/2025", "10:00", "06/09/2025", "11:00"),
     ("azerbaijao", "🇦🇿 Azerbaijão (Baku)", "21/09/2025", "08:00", "20/09/2025", "09:00"),
     ("singapura", "🇸🇬 Singapura (Marina Bay)", "05/10/2025", "09:00", "04/10/2025", "10:00"),
+    ("sprint-austin", "🇺🇸 Sprint - EUA (Austin)", "18/10/2025", "15:00", "17/10/2025", "18:30"),
     ("austin", "🇺🇸 EUA (Austin)", "19/10/2025", "16:00", "18/10/2025", "15:00"),
     ("mexico", "🇲🇽 México (Cidade do México)", "26/10/2025", "17:00", "25/10/2025", "18:00"),
-    ("brasil", "🇧🇷 São Paulo (Interlagos)", "02/11/2025", "12:30", "02/11/2025", "07:30"),
+    ("sprint-brasil", "🇧🇷 Sprint - São Paulo (Interlagos)", "01/11/2025", "11:00", "31/10/2025", "15:30"),
+    ("brasil", "🇧🇷 São Paulo (Interlagos)", "02/11/2025", "12:30", "07/04/2025", "07:30"),
     ("las-vegas", "🇺🇸 Las Vegas (EUA)", "23/11/2025", "03:00", "22/11/2025", "03:00"),
+    ("sprint-catar", "🇶🇦 Sprint - Catar (Lusail)", "29/11/2025", "11:00", "28/11/2025", "14:30"),
     ("catar", "🇶🇦 Catar (Lusail)", "30/11/2025", "13:00", "29/11/2025", "15:00"),
     ("abu-dhabi", "🇦🇪 Abu Dhabi (Yas Marina)", "07/12/2025", "10:00", "06/12/2025", "11:00")
 ]
@@ -239,6 +245,7 @@ def tela_gps():
     palpites = Palpite.query.filter_by(usuario_id=usuario.id).all()
     respostas = {r.gp_slug: r for r in Resposta.query.all()}
     pontuacao = {p.posicao: p.pontos for p in Pontuacao.query.all()}
+    pontuacao_sprint = {p.posicao: p.pontos for p in PontuacaoSprint.query.all()}
     
     # Calcular pontuação total do usuário
     pontos_total = 0
@@ -247,14 +254,20 @@ def tela_gps():
         if resposta:
             # Verifica pole position
             if palpite.pole == resposta.pole and resposta.pole is not None:
-                pontos_total += pontuacao.get(0, 5)
+                if palpite.gp_slug.startswith('sprint'):
+                    pontos_total += pontuacao_sprint.get(0, 1)
+                else:
+                    pontos_total += pontuacao.get(0, 5)
             
             # Verifica posições
             for i in range(1, 11):
                 palpite_pos = getattr(palpite, f'pos_{i}')
                 resposta_pos = getattr(resposta, f'pos_{i}')
                 if palpite_pos == resposta_pos and resposta_pos is not None:
-                    pontos_total += pontuacao.get(i, 0)
+                    if palpite.gp_slug.startswith('sprint'):
+                        pontos_total += pontuacao_sprint.get(i, 0)
+                    else:
+                        pontos_total += pontuacao.get(i, 0)
     
     # Buscar todos os usuários para calcular a posição
     usuarios = Usuario.query.filter(Usuario.username != 'admin').all()
@@ -269,14 +282,20 @@ def tela_gps():
             if resposta:
                 # Verifica pole position
                 if palpite.pole == resposta.pole and resposta.pole is not None:
-                    pontos_user += pontuacao.get(0, 5)
+                    if palpite.gp_slug.startswith('sprint'):
+                        pontos_user += pontuacao_sprint.get(0, 1)
+                    else:
+                        pontos_user += pontuacao.get(0, 5)
                 
                 # Verifica posições
                 for i in range(1, 11):
                     palpite_pos = getattr(palpite, f'pos_{i}')
                     resposta_pos = getattr(resposta, f'pos_{i}')
                     if palpite_pos == resposta_pos and resposta_pos is not None:
-                        pontos_user += pontuacao.get(i, 0)
+                        if palpite.gp_slug.startswith('sprint'):
+                            pontos_user += pontuacao_sprint.get(i, 0)
+                        else:
+                            pontos_user += pontuacao.get(i, 0)
         
         classificacao.append({
             'username': user.username,
@@ -293,17 +312,14 @@ def tela_gps():
             posicao = i + 1
             break
     
-    # Criar lista de GPs com informação de palpite existente
-    gps_com_palpites = []
+    # Criar lista de eventos (GPs) com informação de palpite existente
+    eventos = []
     for slug, nome, data_corrida, hora_corrida, data_classificacao, hora_classificacao in gps_2025:
-        # Converter a data da corrida para date
         data_corrida_dt = datetime.strptime(data_corrida, '%d/%m/%Y').date()
-        
-        # Verificar se o GP está próximo (3 dias antes da corrida)
         dias_para_corrida = (data_corrida_dt - hoje).days
         esta_proximo = 0 <= dias_para_corrida <= 3
-        
-        gps_com_palpites.append({
+        eventos.append({
+            'tipo': 'gp',
             'slug': slug,
             'nome': nome,
             'tem_palpite': slug in palpites_existentes,
@@ -314,8 +330,11 @@ def tela_gps():
             'esta_proximo': esta_proximo
         })
     
+    # Ordenar todos por data
+    eventos.sort(key=lambda x: x['data_corrida'])
+
     return render_template('tela_gps.html', 
-                         gps=gps_com_palpites, 
+                         eventos=eventos,
                          is_admin=session.get('is_admin', False),
                          date_now=hoje,
                          pontos=pontos_total,
@@ -535,13 +554,16 @@ def meus_resultados():
     palpites = Palpite.query.filter_by(usuario_id=session['user_id']).all()
     respostas = {r.gp_slug: r for r in Resposta.query.all()}
     pontuacao = {p.posicao: p.pontos for p in Pontuacao.query.all()}
+    pontuacao_sprint = {p.posicao: p.pontos for p in PontuacaoSprint.query.all()}
     
     resultados = []
     total_geral = 0
     
+    # Processa palpites das corridas principais
     for palpite in palpites:
         # Encontra o nome do GP
-        gp_nome = next((nome for slug, nome, _, _, _, _ in gps_2025 if slug == palpite.gp_slug), palpite.gp_slug)
+        gp_slug = palpite.gp_slug
+        gp_nome = next((nome for slug, nome, _, _, _, _ in gps_2025 if slug == gp_slug), palpite.gp_slug)
         
         # Calcula os pontos
         pontos_gp = 0
@@ -551,14 +573,20 @@ def meus_resultados():
         if resposta:
             # Verifica pole position
             if palpite.pole == resposta.pole and resposta.pole is not None:
-                pontos_gp += pontuacao.get(0, 5)  # Usa 5 como valor padrão se não encontrar na tabela
+                if gp_slug.startswith('sprint'):
+                    pontos_gp += pontuacao_sprint.get(0, 1)
+                else:
+                    pontos_gp += pontuacao.get(0, 5)
             
             # Verifica posições
             for i in range(1, 11):
                 palpite_pos = getattr(palpite, f'pos_{i}')
                 resposta_pos = getattr(resposta, f'pos_{i}')
                 if palpite_pos == resposta_pos and resposta_pos is not None:
-                    pontos_gp += pontuacao.get(i, 0)  # Usa 0 como valor padrão se não encontrar na tabela
+                    if gp_slug.startswith('sprint'):
+                        pontos_gp += pontuacao_sprint.get(i, 0)
+                    else:
+                        pontos_gp += pontuacao.get(i, 0)
         
         total_geral += pontos_gp
         
@@ -568,17 +596,22 @@ def meus_resultados():
         resultados.append({
             'gp': gp_nome,
             'palpite': palpite,
-            'pontos': pontos_gp
+            'pontos': pontos_gp,
+            'tipo': 'corrida'
         })
     
-    # Ordena os resultados por data do GP (usando a ordem definida em gps_2025)
-    resultados.sort(key=lambda x: next((i for i, gp in enumerate(gps_2025) if gp[0] == x['palpite'].gp_slug), float('inf')))
+    # Ordena os resultados por data do GP
+    def get_gp_index(resultado):
+        return next((i for i, gp in enumerate(gps_2025) if gp[0] == resultado['palpite'].gp_slug), float('inf'))
+    
+    resultados.sort(key=get_gp_index)
     
     return render_template('meus_resultados.html', 
                          resultados=resultados, 
-                         gps_2025=gps_2025, 
+                         gps_2025=gps_2025,
                          total_geral=total_geral,
-                         pontuacao=pontuacao)
+                         pontuacao=pontuacao,
+                         pontuacao_sprint=pontuacao_sprint)
 
 @app.route('/classificacao')
 def classificacao():
@@ -592,6 +625,7 @@ def classificacao():
     palpites = Palpite.query.all()
     respostas = {r.gp_slug: r for r in Resposta.query.all()}
     pontuacao = {p.posicao: p.pontos for p in Pontuacao.query.all()}
+    pontuacao_sprint = {p.posicao: p.pontos for p in PontuacaoSprint.query.all()}
     
     classificacao = []
     
@@ -604,14 +638,20 @@ def classificacao():
             if resposta:
                 # Verifica pole position
                 if palpite.pole == resposta.pole and resposta.pole is not None:
-                    total_pontos += pontuacao.get(0, 5)
+                    if palpite.gp_slug.startswith('sprint'):
+                        total_pontos += pontuacao_sprint.get(0, 1)
+                    else:
+                        total_pontos += pontuacao.get(0, 5)
                 
                 # Verifica posições
                 for i in range(1, 11):
                     palpite_pos = getattr(palpite, f'pos_{i}')
                     resposta_pos = getattr(resposta, f'pos_{i}')
                     if palpite_pos == resposta_pos and resposta_pos is not None:
-                        total_pontos += pontuacao.get(i, 0)
+                        if palpite.gp_slug.startswith('sprint'):
+                            total_pontos += pontuacao_sprint.get(i, 0)
+                        else:
+                            total_pontos += pontuacao.get(i, 0)
         
         classificacao.append({
             'username': usuario.username,
@@ -770,8 +810,9 @@ def admin_pontuacao():
     
     # Busca os valores atuais
     pontuacao = {p.posicao: p.pontos for p in Pontuacao.query.all()}
+    pontuacao_sprint = {p.posicao: p.pontos for p in PontuacaoSprint.query.all()}
     
-    return render_template('admin_pontuacao.html', pontuacao=pontuacao)
+    return render_template('admin_pontuacao.html', pontuacao=pontuacao, pontuacao_sprint=pontuacao_sprint)
 
 @app.route('/admin/gerenciar-pilotos', methods=['GET', 'POST'])
 @admin_required
@@ -782,25 +823,44 @@ def admin_gerenciar_pilotos():
         
         if novo_piloto:
             try:
-                piloto = Piloto(nome=novo_piloto)
-                db.session.add(piloto)
-                db.session.commit()
-                flash('Piloto adicionado com sucesso!', 'success')
-            except Exception:
-                flash('Este piloto já está cadastrado!', 'error')
+                # Verifica se o piloto já existe na lista grid_2025
+                if novo_piloto not in grid_2025:
+                    # Adiciona o piloto à lista grid_2025
+                    grid_2025.append(novo_piloto)
+                    # Adiciona o piloto ao banco de dados
+                    piloto = Piloto(nome=novo_piloto)
+                    db.session.add(piloto)
+                    db.session.commit()
+                    flash('Piloto adicionado com sucesso!', 'success')
+                else:
+                    flash('Este piloto já está cadastrado!', 'error')
+            except Exception as e:
+                flash(f'Erro ao adicionar piloto: {str(e)}', 'error')
         
         elif piloto:
             try:
-                piloto = Piloto.query.filter_by(nome=piloto).first()
-                if piloto:
-                    db.session.delete(piloto)
+                # Remove o piloto da lista grid_2025
+                if piloto in grid_2025:
+                    grid_2025.remove(piloto)
+                # Remove o piloto do banco de dados
+                piloto_obj = Piloto.query.filter_by(nome=piloto).first()
+                if piloto_obj:
+                    db.session.delete(piloto_obj)
                     db.session.commit()
                     flash('Piloto excluído com sucesso!', 'success')
             except Exception as e:
                 flash(f'Erro ao excluir piloto: {str(e)}', 'error')
     
-    # Busca todos os pilotos
+    # Busca todos os pilotos do banco de dados
     pilotos = Piloto.query.order_by(Piloto.nome).all()
+    
+    # Garante que todos os pilotos da lista grid_2025 estejam no banco de dados
+    for piloto_nome in grid_2025:
+        piloto = Piloto.query.filter_by(nome=piloto_nome).first()
+        if not piloto:
+            piloto = Piloto(nome=piloto_nome)
+            db.session.add(piloto)
+    db.session.commit()
     
     return render_template('admin_gerenciar_pilotos.html', pilotos=pilotos)
 
@@ -956,6 +1016,7 @@ def resultados_parciais():
     palpites = Palpite.query.all()
     respostas = {r.gp_slug: r for r in Resposta.query.all()}
     pontuacao = {p.posicao: p.pontos for p in Pontuacao.query.all()}
+    pontuacao_sprint = {p.posicao: p.pontos for p in PontuacaoSprint.query.all()}
     
     classificacao = []
     
@@ -979,14 +1040,20 @@ def resultados_parciais():
             if resposta:
                 # Verifica pole position
                 if palpite.pole == resposta.pole and resposta.pole is not None:
-                    pontos_gp += pontuacao.get(0, 5)
+                    if palpite.gp_slug.startswith('sprint'):
+                        pontos_gp += pontuacao_sprint.get(0, 1)
+                    else:
+                        pontos_gp += pontuacao.get(0, 5)
                 
                 # Verifica posições
                 for i in range(1, 11):
                     palpite_pos = getattr(palpite, f'pos_{i}')
                     resposta_pos = getattr(resposta, f'pos_{i}')
                     if palpite_pos == resposta_pos and resposta_pos is not None:
-                        pontos_gp += pontuacao.get(i, 0)
+                        if palpite.gp_slug.startswith('sprint'):
+                            pontos_gp += pontuacao_sprint.get(i, 0)
+                        else:
+                            pontos_gp += pontuacao.get(i, 0)
             
             usuario_info['pontos_por_gp'][palpite.gp_slug] = pontos_gp
             usuario_info['total_pontos'] += pontos_gp
@@ -1324,7 +1391,6 @@ def resultados(nome_gp):
                          resposta=resposta,
                          resultados=resultados)
 
-# Rota para exibir ranking geral
 @app.route('/ranking')
 def ranking():
     # Busca todos os GPs com respostas
@@ -1440,42 +1506,388 @@ def calendario():
     if 'username' not in session:
         return redirect(url_for('login'))
     
+    # Buscar todos os GPs do banco de dados
+    gps = GP.query.order_by(GP.data_corrida).all()
+    
     # Definir o fuso horário de Brasília
     tz_brasilia = pytz.timezone('America/Sao_Paulo')
     
     # Data atual no fuso horário de Brasília
     hoje = datetime.now(tz_brasilia).date()
     
-    # Buscar o usuário
-    usuario = Usuario.query.get(session['user_id'])
+    # Converter as datas dos GPs para objetos datetime.date
+    for gp in gps:
+        try:
+            # Converter data_corrida
+            if isinstance(gp.data_corrida, str):
+                gp.data_corrida = datetime.strptime(gp.data_corrida, '%d/%m/%Y').date()
+            
+            # Converter data_classificacao
+            if isinstance(gp.data_classificacao, str):
+                gp.data_classificacao = datetime.strptime(gp.data_classificacao, '%d/%m/%Y').date()
+            
+            # Calcular se o GP está próximo (3 dias antes)
+            dias_para_corrida = (gp.data_corrida - hoje).days
+            gp.esta_proximo = 0 <= dias_para_corrida <= 3
+            
+        except (ValueError, TypeError) as e:
+            print(f"Erro ao converter data do GP {gp.nome}: {str(e)}")
+            gp.data_corrida = hoje
+            gp.data_classificacao = hoje
+            gp.esta_proximo = False
     
-    # Buscar todos os palpites do usuário
-    palpites_existentes = [p.gp_slug for p in usuario.palpites]
+    # Ordenar os GPs por data da corrida
+    gps_ordenados = sorted(gps, key=lambda x: x.data_corrida)
     
-    # Criar lista de GPs com informação de palpite existente
-    gps_com_palpites = []
-    for slug, nome, data_corrida, hora_corrida, data_classificacao, hora_classificacao in gps_2025:
-        # Converter a data da corrida para date
-        data_corrida_dt = datetime.strptime(data_corrida, '%d/%m/%Y').date()
+    return render_template('calendario.html', gps=gps_ordenados, date_now=hoje)
+
+@app.route('/sprint/<nome_gp>', methods=['GET', 'POST'])
+def tela_palpite_sprint(nome_gp):
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    mensagem = None
+    tipo_mensagem = None
+
+    # Buscar informações do sprint
+    sprint_info = next((s for s in sprints_2025 if s[0] == nome_gp), None)
+    if not sprint_info:
+        flash('Sprint não encontrado!', 'error')
+        return redirect(url_for('tela_gps'))
+
+    # Verifica horário dos palpites
+    pole_habilitado, posicoes_habilitado = verificar_horario_palpites(
+        sprint_info[4],  # data_classificacao
+        sprint_info[5],  # hora_classificacao
+        sprint_info[2],  # data_corrida
+        sprint_info[3]   # hora_corrida
+    )
+
+    if request.method == "POST":
+        print(f"Processando POST para Sprint {nome_gp}")
+        print(f"Dados do formulário: {request.form}")
         
-        # Verificar se o GP está próximo (3 dias antes da corrida)
-        dias_para_corrida = (data_corrida_dt - hoje).days
-        esta_proximo = 0 <= dias_para_corrida <= 3
+        # Verifica se já existe um palpite para este Sprint
+        palpite_existente = PalpiteSprint.query.filter_by(
+            usuario_id=session['user_id'],
+            gp_slug=nome_gp
+        ).first()
         
-        gps_com_palpites.append({
-            'slug': slug,
-            'nome': nome,
-            'tem_palpite': slug in palpites_existentes,
-            'data_corrida': data_corrida_dt,
-            'hora_corrida': hora_corrida,
-            'data_classificacao': data_classificacao,
-            'hora_classificacao': hora_classificacao,
-            'esta_proximo': esta_proximo
+        print(f"Palpite existente: {palpite_existente}")
+        
+        # Verifica se está tentando votar apenas na pole position
+        pole = request.form.get('pole')
+        posicoes = [request.form.get(f'pos_{i}') for i in range(1, 11)]
+        tem_pole = bool(pole)
+        tem_posicoes = any(posicoes)
+        
+        print(f"Pole: {pole}")
+        print(f"Posições: {posicoes}")
+        print(f"Tem pole: {tem_pole}")
+        print(f"Tem posições: {tem_posicoes}")
+        
+        if palpite_existente:
+            # Se já tem palpite completo, não permite alteração
+            if palpite_existente.pole and palpite_existente.pos_1:
+                mensagem = 'Você já fez seu palpite completo para este Sprint!'
+                tipo_mensagem = 'error'
+            # Se tem apenas pole position, permite adicionar posições
+            elif palpite_existente.pole and not palpite_existente.pos_1:
+                if tem_pole:
+                    mensagem = 'Você já votou na pole position!'
+                    tipo_mensagem = 'error'
+                elif not posicoes_habilitado:
+                    mensagem = 'A votação para as posições está desabilitada!'
+                    tipo_mensagem = 'error'
+                else:
+                    try:
+                        # Atualiza apenas as posições
+                        palpite_existente.pos_1 = posicoes[0]
+                        palpite_existente.pos_2 = posicoes[1]
+                        palpite_existente.pos_3 = posicoes[2]
+                        palpite_existente.pos_4 = posicoes[3]
+                        palpite_existente.pos_5 = posicoes[4]
+                        palpite_existente.pos_6 = posicoes[5]
+                        palpite_existente.pos_7 = posicoes[6]
+                        palpite_existente.pos_8 = posicoes[7]
+                        palpite_existente.pos_9 = posicoes[8]
+                        palpite_existente.pos_10 = posicoes[9]
+                        db.session.commit()
+                        mensagem = 'Posições salvas com sucesso!'
+                        tipo_mensagem = 'success'
+                        print("Posições atualizadas com sucesso")
+                    except Exception as e:
+                        print(f"Erro ao atualizar posições: {str(e)}")
+                        mensagem = 'Erro ao salvar as posições!'
+                        tipo_mensagem = 'error'
+            # Se não tem pole position, permite apenas votar nas posições
+            else:
+                if tem_posicoes and not posicoes_habilitado:
+                    mensagem = 'A votação para as posições está desabilitada!'
+                    tipo_mensagem = 'error'
+                elif tem_pole and not pole_habilitado:
+                    mensagem = 'A votação para pole position está desabilitada!'
+                    tipo_mensagem = 'error'
+                else:
+                    try:
+                        # Atualiza apenas as posições
+                        palpite_existente.pos_1 = posicoes[0]
+                        palpite_existente.pos_2 = posicoes[1]
+                        palpite_existente.pos_3 = posicoes[2]
+                        palpite_existente.pos_4 = posicoes[3]
+                        palpite_existente.pos_5 = posicoes[4]
+                        palpite_existente.pos_6 = posicoes[5]
+                        palpite_existente.pos_7 = posicoes[6]
+                        palpite_existente.pos_8 = posicoes[7]
+                        palpite_existente.pos_9 = posicoes[8]
+                        palpite_existente.pos_10 = posicoes[9]
+                        db.session.commit()
+                        mensagem = 'Posições salvas com sucesso!'
+                        tipo_mensagem = 'success'
+                        print("Posições atualizadas com sucesso")
+                    except Exception as e:
+                        print(f"Erro ao atualizar posições: {str(e)}")
+                        mensagem = 'Erro ao salvar as posições!'
+                        tipo_mensagem = 'error'
+        else:
+            # Insere novo palpite
+            if tem_posicoes and not posicoes_habilitado:
+                mensagem = 'A votação para as posições está desabilitada!'
+                tipo_mensagem = 'error'
+            elif tem_pole and not pole_habilitado:
+                mensagem = 'A votação para pole position está desabilitada!'
+                tipo_mensagem = 'error'
+            else:
+                try:
+                    novo_palpite = PalpiteSprint(
+                        usuario_id=session['user_id'],
+                        gp_slug=nome_gp,
+                        pos_1=posicoes[0],
+                        pos_2=posicoes[1],
+                        pos_3=posicoes[2],
+                        pos_4=posicoes[3],
+                        pos_5=posicoes[4],
+                        pos_6=posicoes[5],
+                        pos_7=posicoes[6],
+                        pos_8=posicoes[7],
+                        pos_9=posicoes[8],
+                        pos_10=posicoes[9],
+                        pole=pole
+                    )
+                    db.session.add(novo_palpite)
+                    db.session.commit()
+                    mensagem = 'Palpite salvo com sucesso!'
+                    tipo_mensagem = 'success'
+                    print("Novo palpite inserido com sucesso")
+                except Exception as e:
+                    print(f"Erro ao inserir novo palpite: {str(e)}")
+                    mensagem = 'Erro ao salvar o palpite!'
+                    tipo_mensagem = 'error'
+
+    # Busca palpite existente
+    palpite = PalpiteSprint.query.filter_by(
+        usuario_id=session['user_id'],
+        gp_slug=nome_gp
+    ).first()
+
+    print(f"Palpite encontrado para exibição: {palpite}")
+
+    return render_template(
+        'tela_palpite_sprint.html',
+        nome_gp=nome_gp,
+        nome_gp_exibicao=sprint_info[1],
+        data_corrida=sprint_info[2],
+        hora_corrida=sprint_info[3],
+        data_classificacao=sprint_info[4],
+        hora_classificacao=sprint_info[5],
+        grid_2025=grid_2025,
+        palpite=palpite,
+        pole_habilitado=pole_habilitado,
+        posicoes_habilitado=posicoes_habilitado,
+        mensagem=mensagem,
+        tipo_mensagem=tipo_mensagem
+    )
+
+@app.route('/meus-resultados-sprint')
+def meus_resultados_sprint():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    # Busca todos os palpites do usuário da tabela palpites_sprint
+    palpites = PalpiteSprint.query.filter_by(usuario_id=session['user_id']).all()
+    
+    # Busca todas as respostas da tabela respostas_sprint
+    respostas = {r.gp_slug: r for r in RespostaSprint.query.all()}
+    pontuacao = {p.posicao: p.pontos for p in PontuacaoSprint.query.all()}
+    
+    resultados = []
+    total_geral = 0
+    
+    for palpite in palpites:
+        # Encontra o nome do GP
+        gp_slug = palpite.gp_slug
+        gp_nome = next((nome for slug, nome, _, _, _, _ in sprints_2025 if slug == gp_slug), palpite.gp_slug)
+        
+        # Calcula os pontos
+        pontos_gp = 0
+        resposta = respostas.get(gp_slug)
+        
+        # Verifica se o GP já tem respostas
+        if resposta:
+            # Verifica pole position
+            if palpite.pole == resposta.pole and resposta.pole is not None:
+                pontos_gp += pontuacao.get(0, 1)  # 1 ponto para pole position
+            
+            # Verifica posições (apenas até 8º lugar para sprints)
+            for i in range(1, 9):
+                palpite_pos = getattr(palpite, f'pos_{i}')
+                resposta_pos = getattr(resposta, f'pos_{i}')
+                if palpite_pos == resposta_pos and resposta_pos is not None:
+                    pontos_gp += pontuacao.get(i, 0)
+        
+        total_geral += pontos_gp
+        
+        # Adiciona a resposta ao objeto palpite
+        palpite.resposta = resposta
+        
+        resultados.append({
+            'gp': f"Sprint - {gp_nome}",
+            'palpite': palpite,
+            'pontos': pontos_gp
         })
     
-    return render_template('calendario.html', 
-                         gps=gps_com_palpites,
-                         date_now=hoje)
+    # Ordena os resultados por data do GP (usando a ordem definida em sprints_2025)
+    resultados.sort(key=lambda x: next((i for i, gp in enumerate(sprints_2025) if gp[0] == x['palpite'].gp_slug), float('inf')))
+    
+    return render_template('meus_resultados_sprint.html', 
+                         resultados=resultados, 
+                         gps_2025=sprints_2025, 
+                         total_geral=total_geral,
+                         pontuacao=pontuacao)
+
+@app.route('/salvar_palpite_sprint/<nome_gp>', methods=['POST'])
+def salvar_palpite_sprint(nome_gp):
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    mensagem = None
+    tipo_mensagem = None
+
+    # Buscar informações do sprint
+    sprint_info = next((s for s in sprints_2025 if s[0] == nome_gp), None)
+    if not sprint_info:
+        flash('Sprint não encontrado!', 'error')
+        return redirect(url_for('tela_gps'))
+
+    # Verifica horário dos palpites
+    pole_habilitado, posicoes_habilitado = verificar_horario_palpites(
+        sprint_info[4],  # data_classificacao
+        sprint_info[5],  # hora_classificacao
+        sprint_info[2],  # data_corrida
+        sprint_info[3]   # hora_corrida
+    )
+
+    # Verifica se já existe um palpite para este Sprint
+    palpite_existente = PalpiteSprint.query.filter_by(
+        usuario_id=session['user_id'],
+        gp_slug=nome_gp  # Removido o prefixo sprint_
+    ).first()
+    
+    # Verifica se está tentando votar apenas na pole position
+    pole = request.form.get('pole')
+    posicoes = [request.form.get(f'pos_{i}') for i in range(1, 11)]
+    tem_pole = bool(pole)
+    tem_posicoes = any(posicoes)
+    
+    if palpite_existente:
+        # Se já tem palpite completo, não permite alteração
+        if palpite_existente.pole and palpite_existente.pos_1:
+            flash('Você já fez seu palpite completo para este Sprint!', 'error')
+            return redirect(url_for('tela_palpite_sprint', nome_gp=nome_gp))
+        # Se tem apenas pole position, permite adicionar posições
+        elif palpite_existente.pole and not palpite_existente.pos_1:
+            if tem_pole:
+                flash('Você já votou na pole position!', 'error')
+                return redirect(url_for('tela_palpite_sprint', nome_gp=nome_gp))
+            elif not posicoes_habilitado:
+                flash('A votação para as posições está desabilitada!', 'error')
+                return redirect(url_for('tela_palpite_sprint', nome_gp=nome_gp))
+            else:
+                try:
+                    # Atualiza apenas as posições
+                    palpite_existente.pos_1 = posicoes[0]
+                    palpite_existente.pos_2 = posicoes[1]
+                    palpite_existente.pos_3 = posicoes[2]
+                    palpite_existente.pos_4 = posicoes[3]
+                    palpite_existente.pos_5 = posicoes[4]
+                    palpite_existente.pos_6 = posicoes[5]
+                    palpite_existente.pos_7 = posicoes[6]
+                    palpite_existente.pos_8 = posicoes[7]
+                    palpite_existente.pos_9 = posicoes[8]
+                    palpite_existente.pos_10 = posicoes[9]
+                    db.session.commit()
+                    flash('Posições salvas com sucesso!', 'success')
+                except Exception as e:
+                    flash('Erro ao salvar as posições!', 'error')
+    else:
+        # Insere novo palpite
+        if tem_posicoes and not posicoes_habilitado:
+            flash('A votação para as posições está desabilitada!', 'error')
+            return redirect(url_for('tela_palpite_sprint', nome_gp=nome_gp))
+        elif tem_pole and not pole_habilitado:
+            flash('A votação para pole position está desabilitada!', 'error')
+            return redirect(url_for('tela_palpite_sprint', nome_gp=nome_gp))
+        else:
+            try:
+                novo_palpite = PalpiteSprint(
+                    usuario_id=session['user_id'],
+                    gp_slug=nome_gp,  # Removido o prefixo sprint_
+                    pos_1=posicoes[0],
+                    pos_2=posicoes[1],
+                    pos_3=posicoes[2],
+                    pos_4=posicoes[3],
+                    pos_5=posicoes[4],
+                    pos_6=posicoes[5],
+                    pos_7=posicoes[6],
+                    pos_8=posicoes[7],
+                    pos_9=posicoes[8],
+                    pos_10=posicoes[9],
+                    pole=pole
+                )
+                db.session.add(novo_palpite)
+                db.session.commit()
+                flash('Palpite salvo com sucesso!', 'success')
+            except Exception as e:
+                flash('Erro ao salvar o palpite!', 'error')
+
+    return redirect(url_for('tela_palpite_sprint', nome_gp=nome_gp))
+
+@app.route('/admin/pontuacao-sprint', methods=['GET', 'POST'])
+@admin_required
+def admin_pontuacao_sprint():
+    if request.method == 'POST':
+        try:
+            # Atualiza os valores de pontuação
+            for posicao in range(9):  # 0 a 8 (pole + 8 posições)
+                pontos = request.form.get(f'pontos_{posicao}')
+                if pontos:
+                    pontuacao = PontuacaoSprint.query.filter_by(posicao=posicao).first()
+                    if pontuacao:
+                        pontuacao.pontos = int(pontos)
+                    else:
+                        nova_pontuacao = PontuacaoSprint(posicao=posicao, pontos=int(pontos))
+                        db.session.add(nova_pontuacao)
+            
+            db.session.commit()
+            flash('Pontuação das sprints atualizada com sucesso!', 'success')
+        except Exception as e:
+            flash(f'Erro ao atualizar pontuação das sprints: {str(e)}', 'error')
+    
+    # Busca os valores atuais
+    pontuacao = {p.posicao: p.pontos for p in Pontuacao.query.all()}
+    pontuacao_sprint = {p.posicao: p.pontos for p in PontuacaoSprint.query.all()}
+    
+    return render_template('admin_pontuacao.html', pontuacao=pontuacao, pontuacao_sprint=pontuacao_sprint)
 
 if __name__ == "__main__":
     criar_admin()  # Cria o usuário admin se não existir

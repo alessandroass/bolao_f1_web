@@ -1,4 +1,4 @@
 FLASK_ENV=development
 FLASK_DEBUG=1
-DATABASE_URL=postgresql://postgres:ale81635721@localhost:5432/bolao_f1
+DATABASE_URL=postgresql://postgres:ale81635721@localhost/bolao_f1
 SECRET_KEY=sua_chave_secreta_local

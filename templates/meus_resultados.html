@@ -42,7 +42,11 @@
                                 <td>{{ gp_resultado.palpite.resposta.pole if gp_resultado.palpite.resposta else 'S/R' }}</td>
                                 <td>
                                     {% if gp_resultado.palpite.pole == gp_resultado.palpite.resposta.pole and gp_resultado.palpite.resposta.pole is not none %}
-                                        {{ pontuacao.get(0, 5) }}
+                                        {% if gp[0].startswith('sprint') %}
+                                            {{ pontuacao_sprint.get(0, 1) }}
+                                        {% else %}
+                                            {{ pontuacao.get(0, 5) }}
+                                        {% endif %}
                                     {% else %}
                                         0
                                     {% endif %}
@@ -57,7 +61,11 @@
                                     <td>{{ gp_resultado.palpite.resposta['pos_' ~ i] if gp_resultado.palpite.resposta else 'S/R' }}</td>
                                     <td>
                                         {% if gp_resultado.palpite['pos_' ~ i] == gp_resultado.palpite.resposta['pos_' ~ i] and gp_resultado.palpite.resposta['pos_' ~ i] is not none %}
-                                            {{ pontuacao.get(i, 0) }}
+                                            {% if gp[0].startswith('sprint') %}
+                                                {{ pontuacao_sprint.get(i, 0) }}
+                                            {% else %}
+                                                {{ pontuacao.get(i, 0) }}
+                                            {% endif %}
                                         {% else %}
                                             0
                                         {% endif %}
@@ -92,6 +100,10 @@
 
 .header-buttons {
     margin-bottom: 20px;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-start;
+    align-items: center;
 }
 
 .btn-voltar {
@@ -103,6 +115,9 @@
     border-radius: 5px;
     font-family: 'Formula1', sans-serif;
     transition: background-color 0.3s;
+    font-weight: bold;
+    text-align: center;
+    min-width: 120px;
 }
 
 .btn-voltar:hover {
@@ -158,67 +173,38 @@
 
 .tabela-container {
     overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    border-radius: 6px;
-    overflow: hidden;
 }
 
 .tabela-resultados {
     width: 100%;
-    border-collapse: separate;
-    border-spacing: 0;
+    border-collapse: collapse;
     margin-top: 20px;
-    background: rgba(255, 255, 255, 0.1);
-    min-width: 300px;
-    border-radius: 6px;
+    color: #fff;
 }
 
 .tabela-resultados th,
 .tabela-resultados td {
-    padding: 8px 4px;
+    padding: 10px;
     text-align: center;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    font-size: 0.9em;
 }
 
 .tabela-resultados th {
     background: rgba(225, 6, 0, 0.2);
-    color: #fff;
-    font-family: 'Formula1', sans-serif;
+    font-weight: bold;
 }
 
-.tabela-resultados tr:nth-child(even) {
+.tabela-resultados tbody tr:nth-child(odd) {
     background: rgba(255, 255, 255, 0.05);
 }
 
-.tabela-resultados tr:first-child {
-    background: rgba(240, 11, 240, 0.15);
-}
-
-.tabela-resultados tr:hover {
-    background: rgba(225, 6, 0, 0.1);
+.tabela-resultados tbody tr:hover {
+    background: rgba(255, 255, 255, 0.1);
 }
 
 .tabela-resultados tfoot td {
-    font-weight: bold;
     background: rgba(225, 6, 0, 0.15);
-    color: #fff;
-}
-
-.tabela-resultados th:first-child {
-    border-top-left-radius: 6px;
-}
-
-.tabela-resultados th:last-child {
-    border-top-right-radius: 6px;
-}
-
-.tabela-resultados tfoot td:first-child {
-    border-bottom-left-radius: 6px;
-}
-
-.tabela-resultados tfoot td:last-child {
-    border-bottom-right-radius: 6px;
+    font-weight: bold;
 }
 
 .total-label {
@@ -231,67 +217,29 @@
 
 .sem-resultados {
     text-align: center;
-    padding: 40px;
+    color: #fff;
+    padding: 20px;
     background: rgba(0, 0, 0, 0.7);
     border-radius: 10px;
-    color: #fff;
-    font-size: 1.2em;
+    margin-top: 20px;
 }
 
 @media (max-width: 768px) {
-    .container {
-        padding: 10px;
-    }
-
-    .pontuacao-geral {
-        font-size: 1.2em;
-        padding: 10px;
-    }
-
-    .resultado-gp {
-        padding: 15px;
-    }
-
     .gp-header {
         flex-direction: column;
+        align-items: flex-start;
         gap: 10px;
+    }
+    
+    .pontuacao-total {
+        width: 100%;
         text-align: center;
     }
-
-    .resultado-gp h2 {
-        font-size: 1.2em;
-    }
-
-    .pontuacao-total {
-        font-size: 1em;
-        padding: 8px 15px;
-    }
-
+    
     .tabela-resultados th,
     .tabela-resultados td {
-        padding: 6px 2px;
-        font-size: 0.8em;
-    }
-
-    .tabela-resultados tfoot td {
+        padding: 8px;
         font-size: 0.9em;
-    }
-}
-
-@media (max-width: 480px) {
-    .tabela-resultados th,
-    .tabela-resultados td {
-        padding: 4px 1px;
-        font-size: 0.75em;
-    }
-
-    .resultado-gp h2 {
-        font-size: 1.1em;
-    }
-
-    .pontuacao-total {
-        font-size: 0.9em;
-        padding: 6px 12px;
     }
 }
 </style>
