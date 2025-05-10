@@ -1,13 +1,13 @@
 @font-face {
-    font-family: 'Formula1';
-    src: url('../fonts/Formula1-Bold_web_0.ttf') format('truetype');
+    font-family: 'Orbitron';
+    src: url('../fonts/Orbitron-ExtraBold.ttf') format('truetype');
 }
 
 body {
     background-image: url('../img/background_podio.png');
     background-size: cover;
     background-attachment: fixed;
-    font-family: 'Formula1', sans-serif;
+    font-family: 'Orbitron', sans-serif;
     color: white;
     margin: 0;
     padding: 0;
@@ -125,7 +125,7 @@ body {
     padding: 12px;
     border-radius: 12px;
     color: white;
-    font-family: 'Formula1', sans-serif;
+    font-family: 'Orbitron', sans-serif;
     font-size: 1.1em;
     margin-top: 8px;
     cursor: pointer;
@@ -162,7 +162,7 @@ body {
     background-color: #1a1a1a;
     color: white;
     padding: 12px;
-    font-family: 'Formula1', sans-serif;
+    font-family: 'Orbitron', sans-serif;
 }
 
 .form-group select option:hover,
@@ -208,7 +208,7 @@ body {
     padding: 10px 20px;
     font-size: 14px;
     cursor: pointer;
-    font-family: 'Formula1', sans-serif;
+    font-family: 'Orbitron', sans-serif;
     text-decoration: none;
     transition: all 0.3s ease;
 }
@@ -227,7 +227,7 @@ body {
 }
 
 .mensagem {
-    font-family: 'Formula1', sans-serif;
+    font-family: 'Orbitron', sans-serif;
     font-size: 1.2em;
     padding: 15px;
     margin: 20px auto;
@@ -283,7 +283,7 @@ body {
 }
 
 .popup-message {
-    font-family: 'Formula1', sans-serif;
+    font-family: 'Orbitron', sans-serif;
     font-size: 1.2em;
     color: white;
     margin: 20px 0;
