@@ -1,8 +1,5 @@
-# Remover bloqueio de arquivos .env
-!.env*
-!.env.local
-!.env.*
-!.env
-.env
-.env.local
-.env.* 
+# Arquivos ignorados pelo Cursor
+__pycache__/
+*.pyc
+.vscode/
+.venv/ 

@@ -6,7 +6,13 @@
         <a href="{{ url_for('tela_gps') }}" class="btn-voltar">Voltar</a>
     </div>
     
-    <h1 class="titulo">Meus Resultados</h1>
+    <h1 class="titulo">
+        {% if usuario_visualizado and usuario_visualizado.username != session.username %}
+            Resultados de {{ usuario_visualizado.username }}
+        {% else %}
+            Meus Resultados
+        {% endif %}
+    </h1>
     
     {% if resultados %}
         <div class="pontuacao-geral">

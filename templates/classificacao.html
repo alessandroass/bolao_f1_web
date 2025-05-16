@@ -23,7 +23,11 @@
                     {% for usuario in classificacao %}
                         <tr class="{% if loop.index == 1 %}primeiro{% elif loop.index == 2 %}segundo{% elif loop.index == 3 %}terceiro{% endif %}">
                             <td class="posicao">{{ loop.index }}º</td>
-                            <td class="usuario">{{ usuario.username }}</td>
+                            <td class="usuario">
+                                <a href="{{ url_for('resultados_usuario', username=usuario.username) }}" class="link-usuario">
+                                    {{ usuario.username }}
+                                </a>
+                            </td>
                             <td class="pontos">{{ usuario.total_pontos }}</td>
                         </tr>
                     {% endfor %}
@@ -196,6 +200,17 @@
     font-size: 1.2em;
     box-shadow: 0 0 20px rgba(225, 6, 0, 0.4);
     font-family: 'Orbitron', sans-serif;
+}
+
+.link-usuario {
+    color: #fff;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.link-usuario:hover {
+    color: #e10600;
+    text-decoration: underline;
 }
 
 @media (max-width: 768px) {

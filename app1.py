@@ -1889,6 +1889,81 @@ def admin_pontuacao_sprint():
     
     return render_template('admin_pontuacao.html', pontuacao=pontuacao, pontuacao_sprint=pontuacao_sprint)
 
+@app.route('/resultados_usuario/<username>')
+def resultados_usuario(username):
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    # Busca o usuário pelo username
+    usuario = Usuario.query.filter_by(username=username).first()
+    if not usuario:
+        flash('Usuário não encontrado!', 'error')
+        return redirect(url_for('classificacao'))
+    
+    # Busca todos os palpites do usuário com as respostas correspondentes
+    palpites = Palpite.query.filter_by(usuario_id=usuario.id).all()
+    respostas = {r.gp_slug: r for r in Resposta.query.all()}
+    pontuacao = {p.posicao: p.pontos for p in Pontuacao.query.all()}
+    pontuacao_sprint = {p.posicao: p.pontos for p in PontuacaoSprint.query.all()}
+    
+    resultados = []
+    total_geral = 0
+    
+    # Processa palpites das corridas principais
+    for palpite in palpites:
+        # Encontra o nome do GP
+        gp_slug = palpite.gp_slug
+        gp_nome = next((nome for slug, nome, _, _, _, _ in gps_2025 if slug == gp_slug), palpite.gp_slug)
+        
+        # Calcula os pontos
+        pontos_gp = 0
+        resposta = respostas.get(palpite.gp_slug)
+        
+        # Verifica se o GP já tem respostas
+        if resposta:
+            # Verifica pole position
+            if palpite.pole == resposta.pole and resposta.pole is not None:
+                if gp_slug.startswith('sprint'):
+                    pontos_gp += pontuacao_sprint.get(0, 1)
+                else:
+                    pontos_gp += pontuacao.get(0, 5)
+            
+            # Verifica posições
+            for i in range(1, 11):
+                palpite_pos = getattr(palpite, f'pos_{i}')
+                resposta_pos = getattr(resposta, f'pos_{i}')
+                if palpite_pos == resposta_pos and resposta_pos is not None:
+                    if gp_slug.startswith('sprint'):
+                        pontos_gp += pontuacao_sprint.get(i, 0)
+                    else:
+                        pontos_gp += pontuacao.get(i, 0)
+        
+        total_geral += pontos_gp
+        
+        # Adiciona a resposta ao objeto palpite
+        palpite.resposta = resposta
+        
+        resultados.append({
+            'gp': gp_nome,
+            'palpite': palpite,
+            'pontos': pontos_gp,
+            'tipo': 'corrida'
+        })
+    
+    # Ordena os resultados por data do GP
+    def get_gp_index(resultado):
+        return next((i for i, gp in enumerate(gps_2025) if gp[0] == resultado['palpite'].gp_slug), float('inf'))
+    
+    resultados.sort(key=get_gp_index)
+    
+    return render_template('meus_resultados.html', 
+                         resultados=resultados, 
+                         gps_2025=gps_2025,
+                         total_geral=total_geral,
+                         pontuacao=pontuacao,
+                         pontuacao_sprint=pontuacao_sprint,
+                         usuario_visualizado=usuario)
+
 if __name__ == "__main__":
     criar_admin()  # Cria o usuário admin se não existir
     app.run(debug=True, host='0.0.0.0', port=5000)
