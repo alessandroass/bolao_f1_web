@@ -142,7 +142,7 @@ grid_2025 = [
     "Max Verstappen", "Yuki Tsunoda", "Kimi Antonelli", "George Russell",
     "Charles Leclerc", "Lewis Hamilton", "Lando Norris", "Oscar Piastri",
     "Fernando Alonso", "Lance Stroll", "Liam Lawson", "Isack Hadjar",
-    "Pierre Gasly", "Jack Doohan", "Niko Hulkenberg", "Gabriel Bortoleto",
+    "Pierre Gasly", "Franco Colapinto", "Niko Hulkenberg", "Gabriel Bortoleto",
     "Esteban Ocon", "Oliver Bearman", "Carlos Sainz", "Alexander Albon"
 ]
 
