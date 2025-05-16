@@ -100,21 +100,8 @@ def verificar_banco_existe():
         # Sincroniza os GPs com o banco de dados
         sincronizar_gps_banco()
 
-def inicializar_pilotos():
-    """Inicializa os pilotos no banco de dados a partir da lista grid_2025"""
-    try:
-        for piloto_nome in grid_2025:
-            piloto = Piloto.query.filter_by(nome=piloto_nome).first()
-            if not piloto:
-                piloto = Piloto(nome=piloto_nome)
-                db.session.add(piloto)
-        db.session.commit()
-    except Exception as e:
-        print(f"Erro ao inicializar pilotos: {str(e)}")
-
 # Verifica e inicializa o banco de dados
 verificar_banco_existe()
-inicializar_pilotos()
 
 # Lista dos GPs (nome da rota, nome para exibição, data da corrida, hora da corrida, data da classificação, hora da classificação)
 gps_2025 = [
@@ -364,11 +351,7 @@ def tela_gps():
 def tela_palpite_gp(nome_gp):
     if 'username' not in session:
         return redirect(url_for('login'))
-    
-    # Busca todos os pilotos do banco de dados
-    pilotos = Piloto.query.order_by(Piloto.nome).all()
-    grid_2025 = [p.nome for p in pilotos]
-    
+
     mensagem = None
     tipo_mensagem = None
 
@@ -846,9 +829,10 @@ def admin_gerenciar_pilotos():
         
         if novo_piloto:
             try:
-                # Verifica se o piloto já existe no banco de dados
-                piloto_existente = Piloto.query.filter_by(nome=novo_piloto).first()
-                if not piloto_existente:
+                # Verifica se o piloto já existe na lista grid_2025
+                if novo_piloto not in grid_2025:
+                    # Adiciona o piloto à lista grid_2025
+                    grid_2025.append(novo_piloto)
                     # Adiciona o piloto ao banco de dados
                     piloto = Piloto(nome=novo_piloto)
                     db.session.add(piloto)
@@ -861,6 +845,9 @@ def admin_gerenciar_pilotos():
         
         elif piloto:
             try:
+                # Remove o piloto da lista grid_2025
+                if piloto in grid_2025:
+                    grid_2025.remove(piloto)
                 # Remove o piloto do banco de dados
                 piloto_obj = Piloto.query.filter_by(nome=piloto).first()
                 if piloto_obj:
@@ -872,6 +859,14 @@ def admin_gerenciar_pilotos():
     
     # Busca todos os pilotos do banco de dados
     pilotos = Piloto.query.order_by(Piloto.nome).all()
+    
+    # Garante que todos os pilotos da lista grid_2025 estejam no banco de dados
+    for piloto_nome in grid_2025:
+        piloto = Piloto.query.filter_by(nome=piloto_nome).first()
+        if not piloto:
+            piloto = Piloto(nome=piloto_nome)
+            db.session.add(piloto)
+    db.session.commit()
     
     return render_template('admin_gerenciar_pilotos.html', pilotos=pilotos)
 
@@ -1560,11 +1555,7 @@ def calendario():
 def tela_palpite_sprint(nome_gp):
     if 'username' not in session:
         return redirect(url_for('login'))
-    
-    # Busca todos os pilotos do banco de dados
-    pilotos = Piloto.query.order_by(Piloto.nome).all()
-    grid_2025 = [p.nome for p in pilotos]
-    
+
     mensagem = None
     tipo_mensagem = None
 
