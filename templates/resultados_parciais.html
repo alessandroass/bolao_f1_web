@@ -30,7 +30,7 @@
                     {% for usuario in classificacao %}
                         <tr class="{% if loop.index == 1 %}primeiro{% elif loop.index == 2 %}segundo{% elif loop.index == 3 %}terceiro{% endif %}">
                             <td class="sticky-col posicao">{{ loop.index }}º</td>
-                            <td class="sticky-col usuario">{{ usuario.first_name }}</td>
+                            <td class="sticky-col usuario">{{ usuario.username }}</td>
                             {% for gp in gps %}
                                 <td class="pontos-gp">{{ usuario.pontos_por_gp.get(gp[0], '-') }}</td>
                             {% endfor %}

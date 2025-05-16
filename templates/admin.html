@@ -25,6 +25,26 @@
             </div>
         </div>
         
+        <div class="admin-card">
+            <h3>Extrato de Palpites</h3>
+            <p>Baixar extrato de palpites em PDF</p>
+            <div class="gp-select">
+                <select id="gp-select-pdf">
+                    <option value="">Selecione um GP</option>
+                    <option value="todos">Todos os GPs</option>
+                    {% for gp in gps %}
+                    <option value="{{ gp.slug }}">{{ gp.nome }}</option>
+                    {% endfor %}
+                </select>
+                <button type="button" id="download-pdf" class="confirm-button">Baixar PDF</button>
+            </div>
+            <div id="loading-pdf" class="loading-indicator" style="display: none;">
+                <div class="spinner"></div>
+                <span>Gerando PDF...</span>
+            </div>
+            <div id="error-pdf" class="error-message" style="display: none;"></div>
+        </div>
+        
         <a href="{{ url_for('admin_gerenciar_pilotos') }}" class="admin-card">
             <h3>Gerenciar Pilotos</h3>
             <p>Adicionar ou remover pilotos</p>
@@ -164,6 +184,37 @@
     transform: translateY(-2px);
 }
 
+.loading-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 10px;
+    color: #e10600;
+    font-family: 'Orbitron', sans-serif;
+}
+
+.spinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid #e10600;
+    border-top: 3px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.error-message {
+    color: #e10600;
+    margin-top: 10px;
+    font-family: 'Orbitron', sans-serif;
+    text-align: center;
+}
+
 @media (max-width: 768px) {
     .container {
         padding: 10px;
@@ -241,19 +292,79 @@
 document.addEventListener('DOMContentLoaded', function() {
     const gpSelect = document.getElementById('gp-select');
     const confirmButton = document.getElementById('confirm-gp');
+    const gpSelectPdf = document.getElementById('gp-select-pdf');
+    const downloadPdfButton = document.getElementById('download-pdf');
+    const loadingPdf = document.getElementById('loading-pdf');
+    const errorPdf = document.getElementById('error-pdf');
 
-    // Desabilitar botão inicialmente
+    // Desabilitar botões inicialmente
     confirmButton.disabled = true;
+    downloadPdfButton.disabled = true;
 
     // Habilitar botão quando um GP for selecionado
     gpSelect.addEventListener('change', function() {
         confirmButton.disabled = !this.value;
     });
 
+    // Habilitar botão de PDF quando um GP for selecionado
+    gpSelectPdf.addEventListener('change', function() {
+        downloadPdfButton.disabled = !this.value;
+        errorPdf.style.display = 'none';
+    });
+
     // Redirecionar ao clicar no botão de confirmar
     confirmButton.addEventListener('click', function() {
         if (gpSelect.value) {
             window.location.href = `/admin/respostas/${gpSelect.value}`;
+        }
+    });
+
+    // Redirecionar ao clicar no botão de download PDF
+    downloadPdfButton.addEventListener('click', async function() {
+        if (gpSelectPdf.value) {
+            try {
+                // Mostrar indicador de carregamento
+                loadingPdf.style.display = 'flex';
+                errorPdf.style.display = 'none';
+                downloadPdfButton.disabled = true;
+
+                // Fazer a requisição para gerar o PDF
+                const response = await fetch(`/admin/extrato-pdf/${gpSelectPdf.value}`);
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Erro ao gerar o PDF');
+                }
+
+                // Verificar o tipo de conteúdo da resposta
+                const contentType = response.headers.get('content-type');
+                if (contentType && contentType.includes('application/pdf')) {
+                    // Obter o blob do PDF
+                    const blob = await response.blob();
+                    
+                    // Criar um link para download
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `extrato_palpites_${gpSelectPdf.value}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } else {
+                    // Se não for PDF, tentar ler como JSON para mensagem de erro
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Resposta inválida do servidor');
+                }
+            } catch (error) {
+                console.error('Erro:', error);
+                errorPdf.textContent = error.message || 'Erro ao gerar o PDF. Tente novamente.';
+                errorPdf.style.display = 'block';
+            } finally {
+                // Esconder indicador de carregamento e reabilitar botão
+                loadingPdf.style.display = 'none';
+                downloadPdfButton.disabled = false;
+            }
         }
     });
 });

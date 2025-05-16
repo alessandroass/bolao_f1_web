@@ -5,13 +5,21 @@
 {% block content %}
   <div class="container">
     <div class="header">
-      <a href="{{ url_for('logout') }}" class="logout-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4"></path>
-          <path d="M16 17l5-5-5-5"></path>
-          <path d="M21 12H9"></path>
-        </svg>
-      </a>
+      <div class="header-icons">
+        <a href="{{ url_for('dados_pessoais') }}" class="settings-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>
+        </a>
+        <a href="{{ url_for('logout') }}" class="logout-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4"></path>
+            <path d="M16 17l5-5-5-5"></path>
+            <path d="M21 12H9"></path>
+          </svg>
+        </a>
+      </div>
       <h1 class="title">ESCOLHA UM GP PARA FAZER SEU PALPITE</h1>
       <div class="nav">
         <div class="nav-buttons">
@@ -296,15 +304,11 @@
     }
 
     .logout-icon {
-      position: absolute;
-      top: -10px;
-      right: 10px;
       padding: 8px;
       background: rgba(26, 26, 26, 0.8);
       border-radius: 50%;
       cursor: pointer;
       transition: background 0.3s;
-      z-index: 10;
     }
 
     .logout-icon:hover {
@@ -313,6 +317,35 @@
     }
 
     .logout-icon svg {
+      width: 24px;
+      height: 24px;
+      color: #e10600;
+    }
+
+    .header-icons {
+      position: absolute;
+      top: -10px;
+      right: 10px;
+      display: flex;
+      gap: 20px;
+      z-index: 10;
+    }
+
+    .settings-icon {
+      padding: 8px;
+      background: rgba(26, 26, 26, 0.8);
+      border-radius: 50%;
+      cursor: pointer;
+      transition: background 0.3s;
+      margin-right: 10px;
+    }
+
+    .settings-icon:hover {
+      background: rgba(26, 26, 26, 1);
+      transform: translateY(-2px);
+    }
+
+    .settings-icon svg {
       width: 24px;
       height: 24px;
       color: #e10600;
@@ -422,6 +455,21 @@
       }
 
       .logout-icon svg {
+        width: 20px;
+        height: 20px;
+      }
+
+      .header-icons {
+        top: -5px;
+        right: 5px;
+        gap: 5px;
+      }
+
+      .settings-icon {
+        padding: 6px;
+      }
+
+      .settings-icon svg {
         width: 20px;
         height: 20px;
       }

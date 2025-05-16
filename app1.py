@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, send_file
 import json
 import os
 import random
@@ -12,6 +12,12 @@ from reset_admin import reset_admin_password  # Importando a função de reset d
 from werkzeug.security import generate_password_hash, check_password_hash
 import psycopg2
 import sqlite3
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import letter, landscape
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from io import BytesIO
 
 app = Flask(__name__)
 
@@ -100,7 +106,7 @@ verificar_banco_existe()
 # Lista dos GPs (nome da rota, nome para exibição, data da corrida, hora da corrida, data da classificação, hora da classificação)
 gps_2025 = [
     ("australia", "🇦🇺 Austrália (Melbourne)", "16/03/2025", "01:00", "15/03/2025", "02:00"),
-    ("sprint-china", "🇨🇳 Sprint - China (Xangai)", "22/03/2025", "00:00", "21/03/2025", "04:30"),
+    ("sprint-china", "🇨🇳 Sprint - China (Xangai)", "18/05/2025", "00:00", "16/05/2025", "17:30"),
     ("china", "🇨🇳 China (Xangai)", "23/03/2025", "04:00", "22/03/2025", "04:00"),
     ("japao", "🇯🇵 Japão (Suzuka)", "06/04/2025", "02:00", "05/04/2025", "03:00"),
     ("bahrein", "🇧🇭 Bahrein (Sakhir)", "13/04/2025", "12:00", "12/04/2025", "13:00"),
@@ -885,10 +891,14 @@ def admin_gerenciar_usuarios():
             try:
                 usuario = Usuario.query.get(usuario_id)
                 if usuario:
+                    # Primeiro exclui todos os palpites do usuário
+                    Palpite.query.filter_by(usuario_id=usuario.id).delete()
+                    # Depois exclui o usuário
                     db.session.delete(usuario)
                     db.session.commit()
                     flash('Usuário excluído com sucesso!', 'success')
             except Exception as e:
+                db.session.rollback()
                 flash(f'Erro ao excluir usuário: {str(e)}', 'error')
     
     # Busca todos os usuários
@@ -921,7 +931,7 @@ def redefinir_senha():
         db.session.commit()
         
         flash('Senha redefinida com sucesso!', 'success')
-        return redirect(url_for('tela_gps'))
+        return redirect(url_for('dados_pessoais'))
     
     return render_template('redefinir_senha.html')
 
@@ -1022,7 +1032,7 @@ def resultados_parciais():
     
     for usuario in usuarios:
         usuario_info = {
-            'first_name': usuario.first_name,
+            'username': usuario.username,
             'total_pontos': 0,
             'pontos_por_gp': {}
         }
@@ -1963,6 +1973,237 @@ def resultados_usuario(username):
                          pontuacao=pontuacao,
                          pontuacao_sprint=pontuacao_sprint,
                          usuario_visualizado=usuario)
+
+@app.route('/admin/extrato-pdf/<gp_slug>')
+@admin_required
+def gerar_extrato_pdf(gp_slug):
+    try:
+        # Criar um buffer para armazenar o PDF
+        buffer = BytesIO()
+        
+        try:
+            # Criar o documento PDF em modo landscape
+            doc = SimpleDocTemplate(buffer, pagesize=landscape(letter))
+            styles = getSampleStyleSheet()
+            elements = []
+            
+            if gp_slug == 'todos':
+                # Buscar todos os GPs que têm palpites
+                gps_com_palpites = []
+                for gp in gps_2025:
+                    palpites = Palpite.query.filter_by(gp_slug=gp[0]).all()
+                    if palpites:
+                        gps_com_palpites.append((gp, palpites))
+                
+                if not gps_com_palpites:
+                    return jsonify({'error': 'Não há palpites registrados para nenhum GP!'}), 404
+                
+                # Para cada GP, criar uma tabela
+                for gp_info, palpites in gps_com_palpites:
+                    # Adicionar título do GP
+                    title_style = ParagraphStyle(
+                        'CustomTitle',
+                        parent=styles['Heading1'],
+                        fontSize=14,
+                        spaceAfter=20
+                    )
+                    elements.append(Paragraph(f"Extrato de Palpites - {gp_info[1]}", title_style))
+                    elements.append(Spacer(1, 10))
+                    
+                    # Preparar dados para a tabela
+                    data = [['Usuário', 'Pole', 'P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10']]
+                    
+                    for palpite in palpites:
+                        usuario = Usuario.query.get(palpite.usuario_id)
+                        if not usuario:
+                            continue
+                            
+                        row = [usuario.username]
+                        row.append(palpite.pole or '-')
+                        row.append(palpite.pos_1 or '-')
+                        row.append(palpite.pos_2 or '-')
+                        row.append(palpite.pos_3 or '-')
+                        row.append(palpite.pos_4 or '-')
+                        row.append(palpite.pos_5 or '-')
+                        row.append(palpite.pos_6 or '-')
+                        row.append(palpite.pos_7 or '-')
+                        row.append(palpite.pos_8 or '-')
+                        row.append(palpite.pos_9 or '-')
+                        row.append(palpite.pos_10 or '-')
+                        data.append(row)
+                    
+                    # Definir larguras das colunas (em pontos)
+                    col_widths = [60, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65]
+                    
+                    # Estilizar a tabela
+                    table_style = TableStyle([
+                        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                        ('FONTSIZE', (0, 0), (-1, 0), 10),
+                        ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+                        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+                        ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+                        ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                        ('FONTSIZE', (0, 1), (-1, -1), 10),
+                        ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
+                        ('WORDWRAP', (0, 0), (-1, -1), True),
+                        ('LEFTPADDING', (0, 0), (-1, -1), 4),
+                        ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+                        ('TOPPADDING', (0, 0), (-1, -1), 5),
+                        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+                        ('LEADING', (0, 0), (-1, -1), 12),  # Espaçamento entre linhas
+                    ])
+                    
+                    # Processar os dados para quebrar nomes em duas linhas
+                    for i in range(1, len(data)):
+                        for j in range(len(data[i])):
+                            if data[i][j] != '-':
+                                # Substituir espaço por quebra de linha
+                                data[i][j] = data[i][j].replace(' ', '\n')
+                    
+                    table = Table(data, colWidths=col_widths, repeatRows=1)
+                    table.setStyle(table_style)
+                    elements.append(table)
+                    
+                    # Adicionar quebra de página entre os GPs
+                    elements.append(PageBreak())
+            else:
+                # Buscar o GP específico
+                gp_info = next((gp for gp in gps_2025 if gp[0] == gp_slug), None)
+                if not gp_info:
+                    return jsonify({'error': 'GP não encontrado!'}), 404
+
+                # Buscar todos os usuários que fizeram palpites para este GP
+                palpites = Palpite.query.filter_by(gp_slug=gp_slug).all()
+                
+                if not palpites:
+                    return jsonify({'error': 'Não há palpites registrados para este GP!'}), 404
+                
+                # Adicionar título
+                title_style = ParagraphStyle(
+                    'CustomTitle',
+                    parent=styles['Heading1'],
+                    fontSize=14,
+                    spaceAfter=20
+                )
+                elements.append(Paragraph(f"Extrato de Palpites - {gp_info[1]}", title_style))
+                elements.append(Spacer(1, 10))
+                
+                # Preparar dados para a tabela
+                data = [['Usuário', 'Pole', 'P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10']]
+                
+                for palpite in palpites:
+                    usuario = Usuario.query.get(palpite.usuario_id)
+                    if not usuario:
+                        continue
+                        
+                    row = [usuario.username]
+                    row.append(palpite.pole or '-')
+                    row.append(palpite.pos_1 or '-')
+                    row.append(palpite.pos_2 or '-')
+                    row.append(palpite.pos_3 or '-')
+                    row.append(palpite.pos_4 or '-')
+                    row.append(palpite.pos_5 or '-')
+                    row.append(palpite.pos_6 or '-')
+                    row.append(palpite.pos_7 or '-')
+                    row.append(palpite.pos_8 or '-')
+                    row.append(palpite.pos_9 or '-')
+                    row.append(palpite.pos_10 or '-')
+                    data.append(row)
+                
+                # Definir larguras das colunas (em pontos)
+                col_widths = [50, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55]
+                
+                # Criar a tabela com larguras específicas
+                table = Table(data, colWidths=col_widths, repeatRows=1)
+                
+                # Estilizar a tabela
+                table_style = TableStyle([
+                    ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                    ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                    ('FONTSIZE', (0, 0), (-1, 0), 9),
+                    ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+                    ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+                    ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
+                    ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                    ('FONTSIZE', (0, 1), (-1, -1), 9),
+                    ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                    ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                    ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
+                    ('WORDWRAP', (0, 0), (-1, -1), True),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 3),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 3),
+                    ('TOPPADDING', (0, 0), (-1, -1), 4),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+                ])
+                
+                table.setStyle(table_style)
+                elements.append(table)
+            
+            # Construir o PDF
+            doc.build(elements)
+            
+            # Mover o ponteiro para o início do buffer
+            buffer.seek(0)
+            
+            # Retornar o arquivo PDF
+            return send_file(
+                buffer,
+                as_attachment=True,
+                download_name=f'extrato_palpites_{gp_slug}.pdf',
+                mimetype='application/pdf'
+            )
+        except Exception as e:
+            print(f"Erro ao gerar PDF: {str(e)}")
+            return jsonify({'error': f'Erro ao gerar o PDF: {str(e)}'}), 500
+    except Exception as e:
+        print(f"Erro ao processar requisição: {str(e)}")
+        return jsonify({'error': f'Erro ao processar requisição: {str(e)}'}), 500
+
+@app.route('/dados-pessoais')
+def dados_pessoais():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    usuario = Usuario.query.get(session['user_id'])
+    return render_template('dados_pessoais.html', usuario=usuario)
+
+@app.route('/atualizar-usuario', methods=['POST'])
+def atualizar_usuario():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    novo_username = request.form.get('username')
+    usuario = Usuario.query.get(session['user_id'])
+    
+    # Verifica se o novo username já existe
+    usuario_existente = Usuario.query.filter_by(username=novo_username).first()
+    if usuario_existente and usuario_existente.id != usuario.id:
+        flash('Este nome de usuário já está em uso!', 'error')
+        return redirect(url_for('dados_pessoais'))
+    
+    try:
+        # Atualiza o username
+        usuario.username = novo_username
+        db.session.commit()
+        
+        # Atualiza a sessão com o novo username
+        session['username'] = novo_username
+        
+        flash('Nome de usuário atualizado com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash('Erro ao atualizar nome de usuário!', 'error')
+    
+    return redirect(url_for('dados_pessoais'))
 
 if __name__ == "__main__":
     criar_admin()  # Cria o usuário admin se não existir

@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+
+{% block title %}Dados Pessoais - Bolão F1{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header">
+        <a href="{{ url_for('tela_gps') }}" class="back-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+        </a>
+        <h1 class="title">DADOS PESSOAIS</h1>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="profile-card">
+        <div class="profile-header">
+            <div class="profile-avatar">
+                <span>{{ usuario.first_name[0] }}</span>
+            </div>
+            <h2>{{ usuario.first_name }}</h2>
+            <p class="username">@{{ usuario.username }}</p>
+        </div>
+
+        <div class="profile-info">
+            <div class="info-group">
+                <label>Nome de Usuário</label>
+                <div class="edit-container">
+                    <p id="username-display">{{ usuario.username }}</p>
+                    <form id="edit-username-form" class="edit-form" style="display: none;" method="POST" action="{{ url_for('atualizar_usuario') }}">
+                        <input type="text" name="username" value="{{ usuario.username }}" required>
+                        <div class="button-group">
+                            <button type="submit" class="save-btn">Salvar</button>
+                            <button type="button" class="cancel-btn" onclick="cancelarEdicao()">Cancelar</button>
+                        </div>
+                    </form>
+                    <button class="edit-btn" onclick="iniciarEdicao()">Editar</button>
+                </div>
+            </div>
+            <div class="info-group">
+                <label>Nome</label>
+                <p>{{ usuario.first_name }}</p>
+            </div>
+            <div class="info-group">
+                <label>Senha</label>
+                <div class="password-container">
+                    <p>••••••••</p>
+                    <a href="{{ url_for('redefinir_senha') }}" class="change-password-btn">Alterar Senha</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 30px;
+        position: relative;
+    }
+
+    .back-button {
+        position: absolute;
+        left: 0;
+        padding: 8px;
+        background: rgba(26, 26, 26, 0.8);
+        border-radius: 50%;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+
+    .back-button:hover {
+        background: rgba(26, 26, 26, 1);
+        transform: translateY(-2px);
+    }
+
+    .back-button svg {
+        width: 24px;
+        height: 24px;
+        color: #e10600;
+    }
+
+    .title {
+        width: 100%;
+        text-align: center;
+        font-size: 2em;
+        color: #e10600;
+        font-family: 'Orbitron', sans-serif;
+    }
+
+    .profile-card {
+        background: rgba(26, 26, 26, 0.8);
+        border-radius: 15px;
+        padding: 30px;
+        box-shadow: 0 0 20px rgba(225, 6, 0, 0.2);
+    }
+
+    .profile-header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .profile-avatar {
+        width: 100px;
+        height: 100px;
+        background: #e10600;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+    }
+
+    .profile-avatar span {
+        color: white;
+        font-size: 2.5em;
+        font-weight: bold;
+        font-family: 'Orbitron', sans-serif;
+    }
+
+    .profile-header h2 {
+        color: white;
+        font-size: 1.8em;
+        margin: 0;
+        font-family: 'Orbitron', sans-serif;
+    }
+
+    .username {
+        color: #888;
+        margin: 5px 0 0;
+        font-family: 'Orbitron', sans-serif;
+    }
+
+    .profile-info {
+        display: grid;
+        gap: 20px;
+    }
+
+    .info-group {
+        background: rgba(0, 0, 0, 0.3);
+        padding: 15px;
+        border-radius: 10px;
+    }
+
+    .info-group label {
+        display: block;
+        color: #888;
+        margin-bottom: 5px;
+        font-family: 'Orbitron', sans-serif;
+    }
+
+    .info-group p {
+        color: white;
+        margin: 0;
+        font-size: 1.1em;
+        font-family: 'Orbitron', sans-serif;
+    }
+
+    .alert {
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+        font-family: 'Orbitron', sans-serif;
+    }
+
+    .alert-success {
+        background-color: rgba(40, 167, 69, 0.2);
+        border: 1px solid #28a745;
+        color: #28a745;
+    }
+
+    .alert-error {
+        background-color: rgba(220, 53, 69, 0.2);
+        border: 1px solid #dc3545;
+        color: #dc3545;
+    }
+
+    @media (max-width: 768px) {
+        .container {
+            padding: 15px;
+        }
+
+        .title {
+            font-size: 1.5em;
+        }
+
+        .profile-card {
+            padding: 20px;
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+        }
+
+        .profile-avatar span {
+            font-size: 2em;
+        }
+
+        .profile-header h2 {
+            font-size: 1.5em;
+        }
+
+        .info-group p {
+            font-size: 1em;
+        }
+    }
+
+    .edit-container {
+        position: relative;
+    }
+
+    .edit-btn {
+        background: #e10600;
+        color: white;
+        border: none;
+        padding: 5px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        font-family: 'Orbitron', sans-serif;
+        transition: background 0.3s;
+    }
+
+    .edit-btn:hover {
+        background: #b30500;
+    }
+
+    .edit-form {
+        margin-top: 10px;
+    }
+
+    .edit-form input {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #444;
+        border-radius: 5px;
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        font-family: 'Orbitron', sans-serif;
+    }
+
+    .button-group {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .save-btn, .cancel-btn {
+        padding: 5px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-family: 'Orbitron', sans-serif;
+        transition: background 0.3s;
+    }
+
+    .save-btn {
+        background: #e10600;
+        color: white;
+    }
+
+    .save-btn:hover {
+        background: #b30500;
+    }
+
+    .cancel-btn {
+        background: #444;
+        color: white;
+    }
+
+    .cancel-btn:hover {
+        background: #333;
+    }
+
+    .password-container {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .change-password-btn {
+        background: #e10600;
+        color: white;
+        text-decoration: none;
+        padding: 5px 15px;
+        border-radius: 5px;
+        font-family: 'Orbitron', sans-serif;
+        transition: background 0.3s;
+    }
+
+    .change-password-btn:hover {
+        background: #b30500;
+    }
+</style>
+
+<script>
+function iniciarEdicao() {
+    document.getElementById('username-display').style.display = 'none';
+    document.getElementById('edit-username-form').style.display = 'block';
+    document.querySelector('.edit-btn').style.display = 'none';
+}
+
+function cancelarEdicao() {
+    document.getElementById('username-display').style.display = 'block';
+    document.getElementById('edit-username-form').style.display = 'none';
+    document.querySelector('.edit-btn').style.display = 'block';
+}
+</script>
+{% endblock %} 
