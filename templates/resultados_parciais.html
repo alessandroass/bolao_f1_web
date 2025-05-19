@@ -9,36 +9,38 @@
     <h1 class="titulo">Resultados Parciais por Corrida</h1>
     
     {% if classificacao %}
-        <div class="table-responsive">
-            <table class="tabela-resultados">
-                <thead>
-                    <tr>
-                        <th class="sticky-col">Posição</th>
-                        <th class="sticky-col">Usuário</th>
-                        {% for gp in gps %}
-                            <th>
-                                <div class="gp-header">
-                                    <div class="gp-nome">{{ gp[1].split('(')[0].strip() }}</div>
-                                    <div class="gp-pais">({{ gp[1].split('(')[1].replace(')', '').strip() }})</div>
-                                </div>
-                            </th>
-                        {% endfor %}
-                        <th class="sticky-col-right">Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for usuario in classificacao %}
-                        <tr class="{% if loop.index == 1 %}primeiro{% elif loop.index == 2 %}segundo{% elif loop.index == 3 %}terceiro{% endif %}">
-                            <td class="sticky-col posicao">{{ loop.index }}º</td>
-                            <td class="sticky-col usuario">{{ usuario.username }}</td>
+        <div class="table-container">
+            <div class="table-responsive">
+                <table class="tabela-resultados">
+                    <thead>
+                        <tr>
+                            <th class="sticky-col">Posição</th>
+                            <th class="sticky-col">Usuário</th>
                             {% for gp in gps %}
-                                <td class="pontos-gp">{{ usuario.pontos_por_gp.get(gp[0], '-') }}</td>
+                                <th>
+                                    <div class="gp-header">
+                                        <div class="gp-nome">{{ gp[1].split('(')[0].strip() }}</div>
+                                        <div class="gp-pais">({{ gp[1].split('(')[1].replace(')', '').strip() }})</div>
+                                    </div>
+                                </th>
                             {% endfor %}
-                            <td class="sticky-col-right pontos">{{ usuario.total_pontos }}</td>
+                            <th class="sticky-col-right">Total</th>
                         </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {% for usuario in classificacao %}
+                            <tr class="{% if loop.index == 1 %}primeiro{% elif loop.index == 2 %}segundo{% elif loop.index == 3 %}terceiro{% endif %}">
+                                <td class="sticky-col posicao">{{ loop.index }}º</td>
+                                <td class="sticky-col usuario">{{ usuario.username }}</td>
+                                {% for gp in gps %}
+                                    <td class="pontos-gp">{{ usuario.pontos_por_gp.get(gp[0], '-') }}</td>
+                                {% endfor %}
+                                <td class="sticky-col-right pontos">{{ usuario.total_pontos }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     {% else %}
         <div class="sem-resultados">
@@ -85,12 +87,16 @@
     text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
 }
 
+.table-container {
+    position: relative;
+    margin-bottom: 30px;
+    border-radius: 0;
+    box-shadow: 0 0 20px rgba(225, 6, 0, 0.4);
+}
+
 .table-responsive {
     overflow-x: auto;
-    margin-bottom: 30px;
-    border-radius: 15px;
-    box-shadow: 0 0 20px rgba(225, 6, 0, 0.4);
-    position: relative;
+    margin-left: 162px;
 }
 
 .tabela-resultados {
@@ -98,7 +104,7 @@
     border-collapse: separate;
     border-spacing: 0;
     background: rgba(0, 0, 0, 0.8);
-    border-radius: 15px;
+    border-radius: 0;
     overflow: hidden;
     min-width: 600px;
 }
@@ -131,10 +137,18 @@
 }
 
 .sticky-col {
-    position: sticky;
+    position: absolute;
     left: 0;
-    z-index: 1;
+    z-index: 2;
     background: rgba(0, 0, 0, 0.8);
+    width: 82px; /* Aumentado apenas para acomodar a última letra */
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+}
+
+.sticky-col:nth-child(2) {
+    left: 82px; /* Ajustado para acompanhar a nova largura da primeira coluna */
+    width: 80px;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
 }
 
 .sticky-col-right {
@@ -207,7 +221,7 @@
     text-align: center;
     padding: 40px;
     background: rgba(0, 0, 0, 0.8);
-    border-radius: 15px;
+    border-radius: 0;
     color: #fff;
     font-size: 1.2em;
     box-shadow: 0 0 20px rgba(225, 6, 0, 0.4);
@@ -241,6 +255,10 @@
         padding: 8px;
     }
     
+    .table-responsive {
+        margin-left: 130px;
+    }
+    
     .tabela-resultados {
         min-width: 500px;
     }
@@ -249,6 +267,15 @@
     .tabela-resultados td {
         padding: 4px 6px;
         font-size: 0.75em;
+    }
+
+    .sticky-col {
+        width: 70px;
+    }
+
+    .sticky-col:nth-child(2) {
+        left: 70px;
+        width: 70px;
     }
 
     .posicao, .usuario, .pontos, .pontos-gp {
@@ -283,6 +310,10 @@
 }
 
 @media (max-width: 480px) {
+    .table-responsive {
+        margin-left: 135px;
+    }
+    
     .tabela-resultados {
         min-width: 400px;
     }
@@ -291,6 +322,15 @@
     .tabela-resultados td {
         padding: 3px 4px;
         font-size: 0.7em;
+    }
+
+    .sticky-col {
+        width: 58px;
+    }
+
+    .sticky-col:nth-child(2) {
+        left: 65px;
+        width: 60px;
     }
 
     .posicao, .usuario, .pontos, .pontos-gp {
