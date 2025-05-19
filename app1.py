@@ -109,10 +109,10 @@ gps_2025 = [
     ("sprint-china", "🇨🇳 Sprint - China (Xangai)", "22/03/2025", "00:00", "21/03/2025", "04:30"),
     ("china", "🇨🇳 China (Xangai)", "23/03/2025", "04:00", "22/03/2025", "04:00"),
     ("japao", "🇯🇵 Japão (Suzuka)", "06/04/2025", "02:00", "05/04/2025", "03:00"),
-    ("bahrein", "🇧🇭 Bahrein (Sakhir)", "13/04/2025", "12:00", "12/04/2025", "13:00"),
-    ("arabia-saudita", "🇸🇦 Arábia Saudita (Jeddah)", "20/04/2025", "14:00", "19/04/2025", "14:00"),
+    ("bahrein", "🇧🇭 Bahrein (Sakhir)", "20/05/2025", "12:00", "12/04/2025", "13:00"),
+    ("arabia-saudita", "🇸🇦 Arábia Saudita (Jeddah)", "20/05/2025", "14:00", "19/04/2025", "14:00"),
     ("sprint-miami", "🇺🇸 Sprint - Miami (EUA)", "03/05/2025", "13:00", "02/05/2025", "17:30"),
-    ("miami", "🇺🇸 Miami (EUA)", "04/05/2025", "17:00", "03/05/2025", "17:00"),
+    ("miami", "🇺🇸 Miami (EUA)", "20/05/2025", "23:00", "17/05/2025", "22:00"),
     ("emilia-romagna", "🇮🇹 Emilia-Romagna (Imola)", "18/05/2025", "10:00", "17/05/2025", "11:00"),
     ("monaco", "🇲🇨 Mônaco (Monte Carlo)", "25/05/2025", "10:00", "24/05/2025", "11:00"),
     ("espanha", "🇪🇸 Espanha (Barcelona)", "22/06/2025", "10:00", "21/06/2025", "11:00"),
@@ -2010,8 +2010,28 @@ def gerar_extrato_pdf(gp_slug):
                     elements.append(Paragraph(f"Extrato de Palpites - {gp_info[1]}", title_style))
                     elements.append(Spacer(1, 10))
                     
+                    # Buscar a resposta do GP
+                    resposta = Resposta.query.filter_by(gp_slug=gp_info[0]).first()
+                    
                     # Preparar dados para a tabela
                     data = [['Usuário', 'Pole', 'P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10']]
+                    
+                    # Adicionar linha de resposta se existir
+                    if resposta:
+                        resposta_row = ['RESPOSTA']
+                        resposta_row.append(resposta.pole or '-')
+                        resposta_row.append(resposta.pos_1 or '-')
+                        resposta_row.append(resposta.pos_2 or '-')
+                        resposta_row.append(resposta.pos_3 or '-')
+                        resposta_row.append(resposta.pos_4 or '-')
+                        resposta_row.append(resposta.pos_5 or '-')
+                        resposta_row.append(resposta.pos_6 or '-')
+                        resposta_row.append(resposta.pos_7 or '-')
+                        resposta_row.append(resposta.pos_8 or '-')
+                        resposta_row.append(resposta.pos_9 or '-')
+                        resposta_row.append(resposta.pos_10 or '-')
+                        data.append(resposta_row)
+                        data.append(['---', '---', '---', '---', '---', '---', '---', '---', '---', '---', '---', '---'])
                     
                     for palpite in palpites:
                         usuario = Usuario.query.get(palpite.usuario_id)
@@ -2034,6 +2054,16 @@ def gerar_extrato_pdf(gp_slug):
                     
                     # Definir larguras das colunas (em pontos)
                     col_widths = [60, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65]
+                    
+                    # Processar os dados para quebrar nomes em duas linhas
+                    for i in range(1, len(data)):
+                        for j in range(len(data[i])):
+                            if data[i][j] != '-' and data[i][j] != '---':
+                                # Substituir espaço por quebra de linha
+                                data[i][j] = data[i][j].replace(' ', '\n')
+                    
+                    # Criar a tabela com larguras específicas
+                    table = Table(data, colWidths=col_widths, repeatRows=1)
                     
                     # Estilizar a tabela
                     table_style = TableStyle([
@@ -2059,14 +2089,13 @@ def gerar_extrato_pdf(gp_slug):
                         ('LEADING', (0, 0), (-1, -1), 12),  # Espaçamento entre linhas
                     ])
                     
-                    # Processar os dados para quebrar nomes em duas linhas
-                    for i in range(1, len(data)):
-                        for j in range(len(data[i])):
-                            if data[i][j] != '-':
-                                # Substituir espaço por quebra de linha
-                                data[i][j] = data[i][j].replace(' ', '\n')
+                    # Adicionar estilo especial para a linha de resposta
+                    if resposta:
+                        table_style.add('BACKGROUND', (0, 1), (-1, 1), colors.lightblue)
+                        table_style.add('FONTNAME', (0, 1), (-1, 1), 'Helvetica-Bold')
+                        table_style.add('BACKGROUND', (0, 2), (-1, 2), colors.grey)
+                        table_style.add('TEXTCOLOR', (0, 2), (-1, 2), colors.grey)
                     
-                    table = Table(data, colWidths=col_widths, repeatRows=1)
                     table.setStyle(table_style)
                     elements.append(table)
                     
@@ -2084,6 +2113,9 @@ def gerar_extrato_pdf(gp_slug):
                 if not palpites:
                     return jsonify({'error': 'Não há palpites registrados para este GP!'}), 404
                 
+                # Buscar a resposta do GP
+                resposta = Resposta.query.filter_by(gp_slug=gp_slug).first()
+                
                 # Adicionar título
                 title_style = ParagraphStyle(
                     'CustomTitle',
@@ -2096,6 +2128,23 @@ def gerar_extrato_pdf(gp_slug):
                 
                 # Preparar dados para a tabela
                 data = [['Usuário', 'Pole', 'P1', 'P2', 'P3', 'P4', 'P5', 'P6', 'P7', 'P8', 'P9', 'P10']]
+                
+                # Adicionar linha de resposta se existir
+                if resposta:
+                    resposta_row = ['RESPOSTA']
+                    resposta_row.append(resposta.pole or '-')
+                    resposta_row.append(resposta.pos_1 or '-')
+                    resposta_row.append(resposta.pos_2 or '-')
+                    resposta_row.append(resposta.pos_3 or '-')
+                    resposta_row.append(resposta.pos_4 or '-')
+                    resposta_row.append(resposta.pos_5 or '-')
+                    resposta_row.append(resposta.pos_6 or '-')
+                    resposta_row.append(resposta.pos_7 or '-')
+                    resposta_row.append(resposta.pos_8 or '-')
+                    resposta_row.append(resposta.pos_9 or '-')
+                    resposta_row.append(resposta.pos_10 or '-')
+                    data.append(resposta_row)
+                    data.append(['---', '---', '---', '---', '---', '---', '---', '---', '---', '---', '---', '---'])
                 
                 for palpite in palpites:
                     usuario = Usuario.query.get(palpite.usuario_id)
@@ -2117,7 +2166,14 @@ def gerar_extrato_pdf(gp_slug):
                     data.append(row)
                 
                 # Definir larguras das colunas (em pontos)
-                col_widths = [50, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55, 55]
+                col_widths = [60, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65, 65]
+                
+                # Processar os dados para quebrar nomes em duas linhas
+                for i in range(1, len(data)):
+                    for j in range(len(data[i])):
+                        if data[i][j] != '-' and data[i][j] != '---':
+                            # Substituir espaço por quebra de linha
+                            data[i][j] = data[i][j].replace(' ', '\n')
                 
                 # Criar a tabela com larguras específicas
                 table = Table(data, colWidths=col_widths, repeatRows=1)
@@ -2128,22 +2184,30 @@ def gerar_extrato_pdf(gp_slug):
                     ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
                     ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                     ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                    ('FONTSIZE', (0, 0), (-1, 0), 9),
-                    ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+                    ('FONTSIZE', (0, 0), (-1, 0), 10),
+                    ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
                     ('BACKGROUND', (0, 1), (-1, -1), colors.white),
                     ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
                     ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-                    ('FONTSIZE', (0, 1), (-1, -1), 9),
+                    ('FONTSIZE', (0, 1), (-1, -1), 10),
                     ('GRID', (0, 0), (-1, -1), 1, colors.black),
                     ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
                     ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
                     ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
                     ('WORDWRAP', (0, 0), (-1, -1), True),
-                    ('LEFTPADDING', (0, 0), (-1, -1), 3),
-                    ('RIGHTPADDING', (0, 0), (-1, -1), 3),
-                    ('TOPPADDING', (0, 0), (-1, -1), 4),
-                    ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+                    ('LEFTPADDING', (0, 0), (-1, -1), 4),
+                    ('RIGHTPADDING', (0, 0), (-1, -1), 4),
+                    ('TOPPADDING', (0, 0), (-1, -1), 5),
+                    ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+                    ('LEADING', (0, 0), (-1, -1), 12),  # Espaçamento entre linhas
                 ])
+                
+                # Adicionar estilo especial para a linha de resposta
+                if resposta:
+                    table_style.add('BACKGROUND', (0, 1), (-1, 1), colors.lightblue)
+                    table_style.add('FONTNAME', (0, 1), (-1, 1), 'Helvetica-Bold')
+                    table_style.add('BACKGROUND', (0, 2), (-1, 2), colors.grey)
+                    table_style.add('TEXTCOLOR', (0, 2), (-1, 2), colors.grey)
                 
                 table.setStyle(table_style)
                 elements.append(table)
