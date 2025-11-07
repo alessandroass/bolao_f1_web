@@ -202,9 +202,9 @@
             <h1 class="titulo">🏆 {{ nome_gp_exibicao }} 🏆</h1>
             <div class="status-palpites">
                 {% if pole_habilitado %}
-                    <p class="status-mensagem pole-habilitada">Pole Position habilitada. Faça seu palpite até 1 hora antes da classificação!</p>
+                    <p class="status-mensagem pole-habilitada">Pole Position habilitada. Faça seu palpite até a hora da classificação!</p>
                 {% elif posicoes_habilitado %}
-                    <p class="status-mensagem posicoes-habilitadas">Pole Position desabilitada. Faça seu palpite das 10 posições até 20 minutos antes da corrida!</p>
+                    <p class="status-mensagem posicoes-habilitadas">Pole Position desabilitada. Faça seu palpite das 10 posições até a hora da corrida!</p>
                 {% else %}
                     <p class="status-mensagem votacao-encerrada">Votação encerrada para este GP!</p>
                 {% endif %}
