@@ -1171,11 +1171,11 @@ def verificar_horario_palpites(data_classificacao, hora_classificacao, data_corr
     if diferenca_corrida < 0:
         return False, False
     
-    # Se faltar menos de 1 hora para a classificação, desabilita pole position
-    pole_habilitado = diferenca_classificacao >= 1
+    # Pole Position: Habilitada até a hora da classificação
+    pole_habilitado = diferenca_classificacao >= 0
     
-    # Se faltar menos de 1 hora para a classificação e mais de 20 minutos para a corrida, habilita posições
-    posicoes_habilitado = diferenca_classificacao < 1 and diferenca_corrida > (20/60)
+    # Top 10: Habilitada entre o início da classificação até a hora da corrida
+    posicoes_habilitado = diferenca_classificacao < 0 and diferenca_corrida > 0
     
     return pole_habilitado, posicoes_habilitado
 
