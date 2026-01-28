@@ -30,34 +30,40 @@
                 <!-- Área dos competidores (parte de cima) -->
                 <div class="podio-competidores">
                     <!-- 2º Lugar -->
-                    <div class="competidor competidor-2">
-                        <div class="competidor-avatar">
-                            <span>{{ (classificacao[1].first_name or classificacao[1].username)[0] | upper }}</span>
+                    <a href="{{ url_for('resultados_usuario', username=classificacao[1].username) }}" class="competidor-link">
+                        <div class="competidor competidor-2">
+                            <div class="competidor-avatar">
+                                <span>{{ (classificacao[1].first_name or classificacao[1].username)[0] | upper }}</span>
+                            </div>
+                            <div class="competidor-nome">{{ classificacao[1].username }}</div>
+                            <div class="competidor-pontos">{{ classificacao[1].total_pontos }} pts</div>
                         </div>
-                        <div class="competidor-nome">{{ classificacao[1].username }}</div>
-                        <div class="competidor-pontos">{{ classificacao[1].total_pontos }} pts</div>
-                    </div>
+                    </a>
                     
                     <!-- 1º Lugar -->
-                    <div class="competidor competidor-1">
-                        {% if temporada_encerrada %}
-                        <div class="trofeu">🏆</div>
-                        {% endif %}
-                        <div class="competidor-avatar ouro">
-                            <span>{{ (classificacao[0].first_name or classificacao[0].username)[0] | upper }}</span>
+                    <a href="{{ url_for('resultados_usuario', username=classificacao[0].username) }}" class="competidor-link">
+                        <div class="competidor competidor-1">
+                            {% if temporada_encerrada %}
+                            <div class="trofeu">🏆</div>
+                            {% endif %}
+                            <div class="competidor-avatar ouro">
+                                <span>{{ (classificacao[0].first_name or classificacao[0].username)[0] | upper }}</span>
+                            </div>
+                            <div class="competidor-nome campeao">{{ classificacao[0].username }}</div>
+                            <div class="competidor-pontos">{{ classificacao[0].total_pontos }} pts</div>
                         </div>
-                        <div class="competidor-nome campeao">{{ classificacao[0].username }}</div>
-                        <div class="competidor-pontos">{{ classificacao[0].total_pontos }} pts</div>
-                    </div>
+                    </a>
                     
                     <!-- 3º Lugar -->
-                    <div class="competidor competidor-3">
-                        <div class="competidor-avatar">
-                            <span>{{ (classificacao[2].first_name or classificacao[2].username)[0] | upper }}</span>
+                    <a href="{{ url_for('resultados_usuario', username=classificacao[2].username) }}" class="competidor-link">
+                        <div class="competidor competidor-3">
+                            <div class="competidor-avatar">
+                                <span>{{ (classificacao[2].first_name or classificacao[2].username)[0] | upper }}</span>
+                            </div>
+                            <div class="competidor-nome">{{ classificacao[2].username }}</div>
+                            <div class="competidor-pontos">{{ classificacao[2].total_pontos }} pts</div>
                         </div>
-                        <div class="competidor-nome">{{ classificacao[2].username }}</div>
-                        <div class="competidor-pontos">{{ classificacao[2].total_pontos }} pts</div>
-                    </div>
+                    </a>
                 </div>
                 
                 <!-- Degraus do pódio (parte de baixo) -->
@@ -289,13 +295,26 @@
     max-width: 500px;
 }
 
+.competidor-link {
+    text-decoration: none;
+    flex: 1;
+    max-width: 160px;
+    transition: transform 0.3s ease;
+}
+
+.competidor-link:hover {
+    transform: translateY(-5px);
+}
+
+.competidor-link:hover .competidor-nome {
+    color: #e10600;
+}
+
 .competidor {
     display: flex;
     flex-direction: column;
     align-items: center;
     padding: 15px 10px;
-    flex: 1;
-    max-width: 160px;
 }
 
 .competidor-1 {

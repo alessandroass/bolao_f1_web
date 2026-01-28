@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+
+{% block title %}Pontuação Detalhada {{ temporada.ano }} - Bolão F1{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header">
+        <a href="{{ url_for('classificacao_pilotos', ano=temporada.ano) }}" class="back-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+        </a>
+        <h1 class="title">📊 PONTUAÇÃO DETALHADA - {{ temporada.ano }}</h1>
+    </div>
+
+    <div class="info-box">
+        <span>Pontuação corrida a corrida de cada piloto</span>
+    </div>
+
+    {% if pilotos %}
+    <div class="tabela-container">
+        <table class="tabela-detalhada">
+            <thead>
+                <tr>
+                    <th class="col-pos">Pos</th>
+                    <th class="col-piloto">Piloto</th>
+                    {% for corrida in corridas %}
+                    <th class="col-corrida {% if corrida.is_sprint %}sprint{% endif %}" title="{{ corrida.nome }}">
+                        {{ corrida.nome }}
+                    </th>
+                    {% endfor %}
+                    <th class="col-total">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for piloto in pilotos %}
+                <tr class="{% if loop.index == 1 %}primeiro{% elif loop.index == 2 %}segundo{% elif loop.index == 3 %}terceiro{% endif %}">
+                    <td class="col-pos">{{ loop.index }}º</td>
+                    <td class="col-piloto">{{ piloto.nome }}</td>
+                    {% for pontos in piloto.pontos_por_corrida %}
+                    <td class="col-pontos {% if pontos.posicao == 1 %}vitoria{% elif pontos.posicao and pontos.posicao <= 3 %}podio{% elif pontos.pontos == 0 and pontos.posicao %}fora-pontos{% endif %}">
+                        {% if pontos.pontos > 0 %}
+                            {{ pontos.pontos }}
+                        {% elif pontos.posicao %}
+                            <span class="zero">0</span>
+                        {% else %}
+                            <span class="dns">-</span>
+                        {% endif %}
+                    </td>
+                    {% endfor %}
+                    <td class="col-total">{{ piloto.total }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="legenda">
+        <span class="leg-item"><span class="leg-color vitoria"></span> Vitória</span>
+        <span class="leg-item"><span class="leg-color podio"></span> Pódio</span>
+        <span class="leg-item"><span class="leg-color fora-pontos"></span> Fora dos pontos</span>
+        <span class="leg-item"><span class="leg-dns">-</span> Não participou</span>
+    </div>
+    {% else %}
+    <div class="sem-dados">
+        <p>Nenhum resultado oficial cadastrado para esta temporada.</p>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .container {
+        max-width: 100%;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 20px;
+        position: relative;
+    }
+
+    .back-button {
+        position: absolute;
+        left: 0;
+        padding: 8px;
+        background: rgba(26, 26, 26, 0.8);
+        border-radius: 50%;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+
+    .back-button:hover {
+        background: rgba(26, 26, 26, 1);
+        transform: translateY(-2px);
+    }
+
+    .back-button svg {
+        width: 24px;
+        height: 24px;
+        color: #e10600;
+    }
+
+    .title {
+        text-align: center;
+        font-size: 1.5em;
+        color: #e10600;
+        font-family: 'Orbitron', sans-serif;
+        margin: 0;
+    }
+
+    .info-box {
+        text-align: center;
+        padding: 10px;
+        background: rgba(26, 26, 26, 0.8);
+        border-radius: 10px;
+        margin-bottom: 20px;
+        color: #888;
+        font-family: 'Orbitron', sans-serif;
+        font-size: 0.85em;
+    }
+
+    .tabela-container {
+        overflow-x: auto;
+        background: rgba(26, 26, 26, 0.9);
+        border-radius: 15px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+
+    .tabela-detalhada {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-family: 'Orbitron', sans-serif;
+        font-size: 0.75em;
+    }
+
+    .tabela-detalhada th {
+        background: linear-gradient(to bottom, #e10600, #b80000);
+        color: #fff;
+        padding: 8px 5px;
+        text-align: center;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        white-space: nowrap;
+    }
+
+    .tabela-detalhada th.sprint {
+        background: linear-gradient(to bottom, #1e3d8f, #152b6a);
+    }
+
+    .tabela-detalhada th.col-pos,
+    .tabela-detalhada th.col-piloto {
+        position: sticky;
+        left: 0;
+        z-index: 20;
+    }
+
+    .tabela-detalhada th.col-piloto {
+        left: 35px;
+    }
+
+    .tabela-detalhada td {
+        padding: 6px 5px;
+        text-align: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        color: #fff;
+        background: rgba(0, 0, 0, 0.3);
+    }
+
+    .tabela-detalhada td.col-pos,
+    .tabela-detalhada td.col-piloto {
+        position: sticky;
+        background: rgba(26, 26, 26, 0.98);
+        z-index: 5;
+    }
+
+    .tabela-detalhada td.col-pos {
+        left: 0;
+        font-weight: bold;
+        color: #e10600;
+        width: 35px;
+    }
+
+    .tabela-detalhada td.col-piloto {
+        left: 35px;
+        text-align: left;
+        font-weight: bold;
+        white-space: nowrap;
+        min-width: 120px;
+    }
+
+    .tabela-detalhada td.col-pontos {
+        min-width: 35px;
+    }
+
+    .tabela-detalhada td.col-total {
+        font-weight: bold;
+        color: #2ecc71;
+        background: rgba(46, 204, 113, 0.1);
+        min-width: 50px;
+    }
+
+    .tabela-detalhada tr:hover td {
+        background: rgba(225, 6, 0, 0.2);
+    }
+
+    .tabela-detalhada tr:hover td.col-pos,
+    .tabela-detalhada tr:hover td.col-piloto {
+        background: rgba(225, 6, 0, 0.3);
+    }
+
+    /* Cores especiais */
+    .vitoria {
+        background: rgba(255, 215, 0, 0.3) !important;
+        color: #FFD700 !important;
+        font-weight: bold;
+    }
+
+    .podio {
+        background: rgba(192, 192, 192, 0.2) !important;
+        color: #C0C0C0 !important;
+    }
+
+    .fora-pontos {
+        background: rgba(220, 53, 69, 0.2) !important;
+    }
+
+    .zero {
+        color: #666;
+    }
+
+    .dns {
+        color: #444;
+    }
+
+    /* Linhas do pódio */
+    .primeiro td.col-pos { color: #FFD700 !important; }
+    .segundo td.col-pos { color: #C0C0C0 !important; }
+    .terceiro td.col-pos { color: #CD7F32 !important; }
+
+    .primeiro td.col-piloto { color: #FFD700; }
+
+    /* Legenda */
+    .legenda {
+        display: flex;
+        justify-content: center;
+        gap: 20px;
+        flex-wrap: wrap;
+        padding: 15px;
+        background: rgba(26, 26, 26, 0.8);
+        border-radius: 10px;
+    }
+
+    .leg-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        color: #888;
+        font-family: 'Orbitron', sans-serif;
+        font-size: 0.75em;
+    }
+
+    .leg-color {
+        width: 15px;
+        height: 15px;
+        border-radius: 3px;
+    }
+
+    .leg-color.vitoria {
+        background: rgba(255, 215, 0, 0.5);
+    }
+
+    .leg-color.podio {
+        background: rgba(192, 192, 192, 0.4);
+    }
+
+    .leg-color.fora-pontos {
+        background: rgba(220, 53, 69, 0.4);
+    }
+
+    .leg-dns {
+        color: #444;
+        font-weight: bold;
+    }
+
+    .sem-dados {
+        text-align: center;
+        padding: 40px;
+        background: rgba(0, 0, 0, 0.8);
+        border-radius: 15px;
+        color: #888;
+        font-family: 'Orbitron', sans-serif;
+    }
+
+    /* Responsividade */
+    @media (max-width: 768px) {
+        .container {
+            padding: 10px;
+        }
+
+        .title {
+            font-size: 1.1em;
+            padding: 0 40px;
+        }
+
+        .tabela-detalhada {
+            font-size: 0.65em;
+        }
+
+        .tabela-detalhada th,
+        .tabela-detalhada td {
+            padding: 4px 3px;
+        }
+
+        .tabela-detalhada td.col-piloto {
+            min-width: 80px;
+        }
+
+        .legenda {
+            gap: 10px;
+        }
+
+        .leg-item {
+            font-size: 0.65em;
+        }
+    }
+</style>
+{% endblock %}

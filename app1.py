@@ -2303,9 +2303,9 @@ def resultados_usuario(username):
         flash('Usuário não encontrado!', 'error')
         return redirect(url_for('classificacao'))
     
-    # Busca todos os palpites do usuário com as respostas correspondentes
-    palpites = Palpite.query.filter_by(usuario_id=usuario.id).all()
-    respostas = {r.gp_slug: r for r in Resposta.query.all()}
+    # Busca todos os palpites do usuário DA TEMPORADA ATIVA com as respostas correspondentes
+    palpites = Palpite.query.filter_by(usuario_id=usuario.id, temporada_ano=TEMPORADA_ATIVA).all()
+    respostas = {r.gp_slug: r for r in Resposta.query.filter_by(temporada_ano=TEMPORADA_ATIVA).all()}
     pontuacao = {p.posicao: p.pontos for p in Pontuacao.query.all()}
     pontuacao_sprint = {p.posicao: p.pontos for p in PontuacaoSprint.query.all()}
     
@@ -2824,6 +2824,79 @@ def classificacao_pilotos(ano):
                          temporada=temporada,
                          classificacao=classificacao,
                          total_corridas=len([r for r in respostas if not r.gp_slug.startswith('sprint')]))
+
+@app.route('/pontuacao-pilotos-detalhada/<int:ano>')
+def pontuacao_pilotos_detalhada(ano):
+    """Tabela detalhada com pontuação de cada piloto em cada corrida"""
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    temporada = Temporada.query.filter_by(ano=ano).first()
+    if not temporada:
+        flash('Temporada não encontrada!', 'error')
+        return redirect(url_for('historico_temporadas'))
+    
+    pontos_f1 = {1: 25, 2: 18, 3: 15, 4: 12, 5: 10, 6: 8, 7: 6, 8: 4, 9: 2, 10: 1}
+    pontos_sprint = {1: 8, 2: 7, 3: 6, 4: 5, 5: 4, 6: 3, 7: 2, 8: 1}
+    
+    # Buscar todas as respostas da temporada (ordenadas)
+    respostas = Resposta.query.filter_by(temporada_ano=ano).all()
+    
+    # Separar corridas e sprints, ordenar por ordem do calendário
+    corridas = []
+    for slug, nome, *_ in gps_2025:
+        resposta = next((r for r in respostas if r.gp_slug == slug), None)
+        if resposta:
+            corridas.append({
+                'slug': slug,
+                'nome': nome.replace('GP ', '').replace('Sprint ', 'S-')[:12],  # Nome curto
+                'resposta': resposta,
+                'is_sprint': slug.startswith('sprint')
+            })
+    
+    # Coletar todos os pilotos que participaram
+    pilotos_set = set()
+    for corrida in corridas:
+        for pos in range(1, 11):
+            piloto = getattr(corrida['resposta'], f'pos_{pos}', None)
+            if piloto:
+                pilotos_set.add(piloto)
+    
+    # Calcular pontos por piloto por corrida
+    pilotos_dados = {}
+    for piloto in pilotos_set:
+        pilotos_dados[piloto] = {
+            'nome': piloto,
+            'pontos_por_corrida': [],
+            'total': 0
+        }
+        
+        for corrida in corridas:
+            pontos = 0
+            posicao = None
+            pontos_usar = pontos_sprint if corrida['is_sprint'] else pontos_f1
+            
+            # Encontrar posição do piloto nesta corrida
+            for pos in range(1, 11):
+                if getattr(corrida['resposta'], f'pos_{pos}', None) == piloto:
+                    posicao = pos
+                    pontos = pontos_usar.get(pos, 0)
+                    break
+            
+            pilotos_dados[piloto]['pontos_por_corrida'].append({
+                'pontos': pontos,
+                'posicao': posicao
+            })
+            pilotos_dados[piloto]['total'] += pontos
+    
+    # Converter para lista e ordenar por total
+    pilotos_lista = list(pilotos_dados.values())
+    pilotos_lista.sort(key=lambda x: -x['total'])
+    
+    return render_template('pontuacao_pilotos_detalhada.html',
+                         temporada=temporada,
+                         corridas=corridas,
+                         pilotos=pilotos_lista)
 
 @app.route('/classificacao-construtores/<int:ano>')
 def classificacao_construtores(ano):
