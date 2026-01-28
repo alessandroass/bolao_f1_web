@@ -1,0 +1,544 @@
+{% extends "base.html" %}
+
+{% block title %}Classificação Pilotos {{ temporada.ano }} - Bolão F1{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header">
+        <a href="{{ url_for('ver_temporada', ano=temporada.ano) }}" class="back-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+        </a>
+        <h1 class="title">🏎️ PILOTOS F1 - {{ temporada.ano }}</h1>
+    </div>
+
+    <div class="info-box">
+        <span>📊 Corridas computadas: <strong>{{ total_corridas }}</strong></span>
+    </div>
+
+    {% if classificacao %}
+    <!-- Pódio dos 3 primeiros -->
+    {% if classificacao|length >= 3 %}
+    <div class="podio-section">
+        <h2>🏆 TOP 3 PILOTOS 🏆</h2>
+        <div class="podio-container">
+            <div class="podio-competidores">
+                <!-- 2º Lugar -->
+                <div class="competidor competidor-2">
+                    <div class="competidor-avatar prata">
+                        <span>{{ classificacao[1].codigo[:2] }}</span>
+                    </div>
+                    <div class="competidor-nome">{{ classificacao[1].nome }}</div>
+                    <div class="competidor-pontos">{{ classificacao[1].pontos }} pts</div>
+                </div>
+                
+                <!-- 1º Lugar -->
+                <div class="competidor competidor-1">
+                    <div class="trofeu">🏆</div>
+                    <div class="competidor-avatar ouro">
+                        <span>{{ classificacao[0].codigo[:2] }}</span>
+                    </div>
+                    <div class="competidor-nome campeao">{{ classificacao[0].nome }}</div>
+                    <div class="competidor-pontos">{{ classificacao[0].pontos }} pts</div>
+                </div>
+                
+                <!-- 3º Lugar -->
+                <div class="competidor competidor-3">
+                    <div class="competidor-avatar bronze">
+                        <span>{{ classificacao[2].codigo[:2] }}</span>
+                    </div>
+                    <div class="competidor-nome">{{ classificacao[2].nome }}</div>
+                    <div class="competidor-pontos">{{ classificacao[2].pontos }} pts</div>
+                </div>
+            </div>
+            
+            <!-- Degraus do pódio -->
+            <div class="podio-degraus">
+                <div class="degrau degrau-2">
+                    <span class="degrau-numero">2</span>
+                </div>
+                <div class="degrau degrau-1">
+                    <span class="degrau-numero">1</span>
+                </div>
+                <div class="degrau degrau-3">
+                    <span class="degrau-numero">3</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Tabela completa -->
+    <div class="classificacao-section">
+        <h2>📊 Classificação Completa</h2>
+        <div class="table-responsive">
+            <table class="tabela-classificacao">
+                <thead>
+                    <tr>
+                        <th>Pos</th>
+                        <th>Piloto</th>
+                        <th>Pts</th>
+                        <th>Vit</th>
+                        <th>Pód</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for piloto in classificacao %}
+                    <tr class="{% if loop.index == 1 %}primeiro{% elif loop.index == 2 %}segundo{% elif loop.index == 3 %}terceiro{% endif %}">
+                        <td class="posicao">{{ loop.index }}º</td>
+                        <td class="piloto">
+                            <span class="piloto-nome">{{ piloto.nome }}</span>
+                        </td>
+                        <td class="pontos">{{ piloto.pontos }}</td>
+                        <td class="stat">{{ piloto.vitorias }}</td>
+                        <td class="stat">{{ piloto.podios }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="sem-dados">
+        <p>Nenhum resultado oficial cadastrado para esta temporada.</p>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 30px;
+        position: relative;
+    }
+
+    .back-button {
+        position: absolute;
+        left: 0;
+        padding: 8px;
+        background: rgba(26, 26, 26, 0.8);
+        border-radius: 50%;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+
+    .back-button:hover {
+        background: rgba(26, 26, 26, 1);
+        transform: translateY(-2px);
+    }
+
+    .back-button svg {
+        width: 24px;
+        height: 24px;
+        color: #e10600;
+    }
+
+    .title {
+        text-align: center;
+        font-size: 1.8em;
+        color: #e10600;
+        font-family: 'Orbitron', sans-serif;
+        margin: 0;
+    }
+
+    .info-box {
+        text-align: center;
+        padding: 15px;
+        background: rgba(26, 26, 26, 0.8);
+        border-radius: 10px;
+        margin-bottom: 25px;
+        color: #fff;
+        font-family: 'Orbitron', sans-serif;
+    }
+
+    .info-box strong {
+        color: #2ecc71;
+    }
+
+    /* Pódio */
+    .podio-section {
+        background: linear-gradient(180deg, rgba(26, 26, 26, 0.95), rgba(15, 15, 15, 0.98));
+        border-radius: 20px;
+        padding: 30px 20px;
+        margin-bottom: 30px;
+        box-shadow: 0 0 40px rgba(225, 6, 0, 0.4);
+        border: 1px solid rgba(225, 6, 0, 0.3);
+    }
+
+    .podio-section h2 {
+        text-align: center;
+        color: #FFD700;
+        font-family: 'Orbitron', sans-serif;
+        margin-bottom: 30px;
+        font-size: 1.5em;
+        text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    }
+
+    .podio-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .podio-competidores {
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        gap: 10px;
+        width: 100%;
+        max-width: 500px;
+    }
+
+    .competidor {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 15px 10px;
+        flex: 1;
+        max-width: 160px;
+    }
+
+    .competidor-1 {
+        margin-bottom: 20px;
+    }
+
+    .trofeu {
+        font-size: 2.5em;
+        margin-bottom: 10px;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+
+    .competidor-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2em;
+        font-weight: bold;
+        font-family: 'Orbitron', sans-serif;
+        color: #1a1a1a;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+    }
+
+    .competidor-avatar.ouro {
+        width: 80px;
+        height: 80px;
+        font-size: 1.5em;
+        background: linear-gradient(135deg, #FFD700, #FFA500);
+        box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
+        border: 3px solid #fff;
+    }
+
+    .competidor-avatar.prata {
+        background: linear-gradient(135deg, #C0C0C0, #A0A0A0);
+        box-shadow: 0 0 20px rgba(192, 192, 192, 0.5);
+    }
+
+    .competidor-avatar.bronze {
+        background: linear-gradient(135deg, #CD7F32, #8B4513);
+        box-shadow: 0 0 20px rgba(205, 127, 50, 0.5);
+    }
+
+    .competidor-nome {
+        color: #fff;
+        font-family: 'Orbitron', sans-serif;
+        font-size: 0.85em;
+        text-align: center;
+        margin-bottom: 3px;
+    }
+
+    .competidor-nome.campeao {
+        color: #FFD700;
+        font-size: 1em;
+        font-weight: bold;
+    }
+
+    .competidor-equipe {
+        color: #888;
+        font-family: 'Orbitron', sans-serif;
+        font-size: 0.7em;
+        text-align: center;
+        margin-bottom: 5px;
+    }
+
+    .competidor-pontos {
+        color: #2ecc71;
+        font-family: 'Orbitron', sans-serif;
+        font-weight: bold;
+        font-size: 0.9em;
+    }
+
+    .podio-degraus {
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        width: 100%;
+        max-width: 500px;
+        gap: 5px;
+    }
+
+    .degrau {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex: 1;
+        max-width: 160px;
+        border-radius: 8px 8px 0 0;
+    }
+
+    .degrau-1 {
+        height: 100px;
+        background: linear-gradient(180deg, #FFD700, #B8860B);
+    }
+
+    .degrau-2 {
+        height: 70px;
+        background: linear-gradient(180deg, #C0C0C0, #808080);
+    }
+
+    .degrau-3 {
+        height: 50px;
+        background: linear-gradient(180deg, #CD7F32, #8B4513);
+    }
+
+    .degrau-numero {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 2em;
+        font-weight: bold;
+        color: rgba(0, 0, 0, 0.3);
+    }
+
+    /* Tabela */
+    .classificacao-section {
+        background: rgba(26, 26, 26, 0.9);
+        border-radius: 15px;
+        padding: 25px 20px;
+    }
+
+    .classificacao-section h2 {
+        text-align: center;
+        color: #e10600;
+        font-family: 'Orbitron', sans-serif;
+        margin-bottom: 20px;
+        font-size: 1.3em;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    .tabela-classificacao {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .tabela-classificacao th {
+        background: linear-gradient(to bottom, #e10600, #b80000);
+        color: #fff;
+        font-family: 'Orbitron', sans-serif;
+        padding: 12px 8px;
+        text-align: center;
+        font-size: 0.85em;
+    }
+
+    .tabela-classificacao td {
+        padding: 10px 8px;
+        text-align: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        color: #fff;
+        font-family: 'Orbitron', sans-serif;
+        font-size: 0.85em;
+    }
+
+    .tabela-classificacao tr:hover {
+        background: rgba(225, 6, 0, 0.2);
+    }
+
+    .posicao {
+        font-weight: bold;
+        color: #e10600;
+        font-size: 1em;
+    }
+
+    .piloto {
+        text-align: left;
+    }
+
+    .piloto-codigo {
+        display: inline-block;
+        background: #333;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.75em;
+        margin-right: 8px;
+        color: #fff;
+    }
+
+    .piloto-nome {
+        font-weight: bold;
+    }
+
+    .equipe {
+        color: #888;
+        font-size: 0.8em;
+    }
+
+    .pontos {
+        font-weight: bold;
+        color: #2ecc71;
+        font-size: 1em;
+    }
+
+    .stat {
+        color: #888;
+    }
+
+    .primeiro {
+        background: linear-gradient(to right, rgba(255, 215, 0, 0.3), transparent);
+    }
+    .primeiro .posicao { color: #FFD700; }
+
+    .segundo {
+        background: linear-gradient(to right, rgba(192, 192, 192, 0.3), transparent);
+    }
+    .segundo .posicao { color: #C0C0C0; }
+
+    .terceiro {
+        background: linear-gradient(to right, rgba(205, 127, 50, 0.3), transparent);
+    }
+    .terceiro .posicao { color: #CD7F32; }
+
+    .sem-dados {
+        text-align: center;
+        padding: 40px;
+        background: rgba(0, 0, 0, 0.8);
+        border-radius: 15px;
+        color: #888;
+        font-family: 'Orbitron', sans-serif;
+    }
+
+    /* Responsividade */
+    @media (max-width: 768px) {
+        .container {
+            padding: 10px;
+        }
+
+        .title {
+            font-size: 1.2em;
+            padding: 0 40px;
+        }
+
+        .podio-section {
+            padding: 20px 10px;
+        }
+
+        .podio-section h2 {
+            font-size: 1.2em;
+        }
+
+        .podio-competidores {
+            gap: 5px;
+        }
+
+        .competidor {
+            padding: 10px 5px;
+        }
+
+        .trofeu {
+            font-size: 1.8em;
+        }
+
+        .competidor-avatar {
+            width: 45px;
+            height: 45px;
+            font-size: 1em;
+        }
+
+        .competidor-avatar.ouro {
+            width: 55px;
+            height: 55px;
+            font-size: 1.2em;
+        }
+
+        .competidor-nome {
+            font-size: 0.7em;
+        }
+
+        .competidor-equipe {
+            font-size: 0.6em;
+        }
+
+        .competidor-pontos {
+            font-size: 0.75em;
+        }
+
+        .degrau-1 { height: 70px; }
+        .degrau-2 { height: 50px; }
+        .degrau-3 { height: 35px; }
+        .degrau-numero { font-size: 1.3em; }
+
+        .classificacao-section {
+            padding: 15px 10px;
+        }
+
+        .tabela-classificacao th,
+        .tabela-classificacao td {
+            padding: 8px 4px;
+            font-size: 0.75em;
+        }
+
+        .piloto-codigo {
+            display: none;
+        }
+    }
+
+    @media (max-width: 400px) {
+        .competidor-avatar {
+            width: 40px;
+            height: 40px;
+            font-size: 0.9em;
+        }
+
+        .competidor-avatar.ouro {
+            width: 50px;
+            height: 50px;
+            font-size: 1em;
+        }
+
+        .trofeu {
+            font-size: 1.5em;
+        }
+
+        .degrau-1 { height: 60px; }
+        .degrau-2 { height: 40px; }
+        .degrau-3 { height: 28px; }
+        .degrau-numero { font-size: 1em; }
+
+        .tabela-classificacao th,
+        .tabela-classificacao td {
+            padding: 6px 3px;
+            font-size: 0.7em;
+        }
+    }
+</style>
+{% endblock %}

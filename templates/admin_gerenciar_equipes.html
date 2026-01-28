@@ -1,0 +1,453 @@
+{% extends "base.html" %}
+
+{% block title %}Gerenciar Equipes - Bolão F1 2026{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header-buttons">
+        <a href="{{ url_for('admin') }}" class="btn-voltar">Voltar</a>
+    </div>
+    
+    <h1 class="titulo">Gerenciar Equipes</h1>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <!-- Formulário para adicionar nova equipe -->
+    <div class="card">
+        <h3>Adicionar Nova Equipe</h3>
+        <form method="POST" class="form-equipe">
+            <input type="hidden" name="action" value="adicionar">
+            <div class="form-group">
+                <label for="nome_equipe">Nome da Equipe:</label>
+                <input type="text" id="nome_equipe" name="nome_equipe" placeholder="Ex: Red Bull Racing" required>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="piloto1_id">Piloto 1:</label>
+                    <select id="piloto1_id" name="piloto1_id">
+                        <option value="">Selecione um piloto</option>
+                        {% for piloto in pilotos %}
+                        <option value="{{ piloto.id }}">{{ piloto.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="piloto2_id">Piloto 2:</label>
+                    <select id="piloto2_id" name="piloto2_id">
+                        <option value="">Selecione um piloto</option>
+                        {% for piloto in pilotos %}
+                        <option value="{{ piloto.id }}">{{ piloto.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="btn-submit">Adicionar Equipe</button>
+        </form>
+    </div>
+    
+    <!-- Proteção do Histórico -->
+    <div class="card card-snapshot">
+        <h3>🛡️ Proteção do Histórico</h3>
+        <p class="snapshot-info">
+            Antes de alterar pilotos das equipes para a próxima temporada, salve um snapshot para preservar o histórico.
+        </p>
+        <div class="snapshot-status">
+            {% if snapshot_existe %}
+            <span class="status-ok">✅ Snapshot da temporada {{ temporada_atual }} já salvo</span>
+            {% else %}
+            <span class="status-warning">⚠️ Snapshot da temporada {{ temporada_atual }} ainda não salvo</span>
+            {% endif %}
+        </div>
+        {% if not snapshot_existe %}
+        <form method="POST" action="{{ url_for('salvar_snapshot_temporada') }}" onsubmit="return confirm('Salvar snapshot das equipes para a temporada {{ temporada_atual }}? Isso protegerá o histórico caso você altere os pilotos.');">
+            <input type="hidden" name="ano" value="{{ temporada_atual }}">
+            <button type="submit" class="btn-snapshot">Salvar Snapshot {{ temporada_atual }}</button>
+        </form>
+        {% endif %}
+    </div>
+    
+    <!-- Lista de equipes cadastradas -->
+    <div class="card">
+        <h3>Equipes Cadastradas ({{ equipes|length }})</h3>
+        
+        {% if equipes %}
+        <div class="equipes-lista">
+            {% for equipe in equipes %}
+            <div class="equipe-item">
+                <div class="equipe-header">
+                    <span class="equipe-nome">{{ equipe.nome }}</span>
+                    <form method="POST" class="form-excluir" onsubmit="return confirm('Tem certeza que deseja excluir esta equipe?');">
+                        <input type="hidden" name="action" value="excluir">
+                        <input type="hidden" name="equipe_id" value="{{ equipe.id }}">
+                        <button type="submit" class="btn-excluir">✕</button>
+                    </form>
+                </div>
+                <form method="POST" class="form-pilotos">
+                    <input type="hidden" name="action" value="editar">
+                    <input type="hidden" name="equipe_id" value="{{ equipe.id }}">
+                    <div class="pilotos-row">
+                        <div class="piloto-select">
+                            <label>Piloto 1:</label>
+                            <select name="piloto1_id">
+                                <option value="">Sem piloto</option>
+                                {% for piloto in pilotos %}
+                                <option value="{{ piloto.id }}" {% if equipe.piloto1_id == piloto.id %}selected{% endif %}>
+                                    {{ piloto.nome }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="piloto-select">
+                            <label>Piloto 2:</label>
+                            <select name="piloto2_id">
+                                <option value="">Sem piloto</option>
+                                {% for piloto in pilotos %}
+                                <option value="{{ piloto.id }}" {% if equipe.piloto2_id == piloto.id %}selected{% endif %}>
+                                    {{ piloto.nome }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn-salvar">Salvar</button>
+                    </div>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="sem-dados">Nenhuma equipe cadastrada.</p>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.header-buttons {
+    margin-bottom: 20px;
+}
+
+.btn-voltar {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #e10600;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 5px;
+    font-family: 'Orbitron', sans-serif;
+    transition: all 0.3s;
+}
+
+.btn-voltar:hover {
+    background: #b80000;
+    transform: translateY(-2px);
+}
+
+.titulo {
+    text-align: center;
+    color: #e10600;
+    font-family: 'Orbitron', sans-serif;
+    margin-bottom: 30px;
+    font-size: 1.8em;
+}
+
+.alert {
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    font-family: 'Orbitron', sans-serif;
+}
+
+.alert-success {
+    background: rgba(40, 167, 69, 0.2);
+    border: 1px solid #28a745;
+    color: #28a745;
+}
+
+.alert-error {
+    background: rgba(220, 53, 69, 0.2);
+    border: 1px solid #dc3545;
+    color: #dc3545;
+}
+
+.alert-warning {
+    background: rgba(255, 193, 7, 0.2);
+    border: 1px solid #ffc107;
+    color: #ffc107;
+}
+
+.card-snapshot {
+    border-color: rgba(255, 215, 0, 0.4);
+    background: linear-gradient(135deg, rgba(26, 26, 26, 0.95), rgba(40, 40, 26, 0.9));
+}
+
+.snapshot-info {
+    color: #aaa;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.85em;
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+.snapshot-status {
+    margin-bottom: 15px;
+}
+
+.status-ok {
+    color: #28a745;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.9em;
+}
+
+.status-warning {
+    color: #ffc107;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.9em;
+}
+
+.btn-snapshot {
+    padding: 12px 25px;
+    background: linear-gradient(135deg, #FFD700, #B8860B);
+    color: #1a1a1a;
+    border: none;
+    border-radius: 5px;
+    font-family: 'Orbitron', sans-serif;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 0.95em;
+    font-weight: bold;
+}
+
+.btn-snapshot:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+}
+
+.card {
+    background: rgba(26, 26, 26, 0.9);
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 25px;
+    border: 1px solid rgba(225, 6, 0, 0.3);
+}
+
+.card h3 {
+    color: #e10600;
+    font-family: 'Orbitron', sans-serif;
+    margin-bottom: 20px;
+    font-size: 1.2em;
+}
+
+.form-equipe {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.form-group label {
+    color: #fff;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.9em;
+}
+
+.form-group input,
+.form-group select {
+    padding: 12px;
+    border: 1px solid #444;
+    border-radius: 5px;
+    background: #1a1a1a;
+    color: #fff;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.9em;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    border-color: #e10600;
+    outline: none;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.btn-submit {
+    padding: 12px 25px;
+    background: linear-gradient(135deg, #e10600, #b80000);
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    font-family: 'Orbitron', sans-serif;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 1em;
+}
+
+.btn-submit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(225, 6, 0, 0.4);
+}
+
+.equipes-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.equipe-item {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    padding: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.equipe-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.equipe-nome {
+    color: #FFD700;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.form-excluir {
+    display: inline;
+}
+
+.btn-excluir {
+    background: #dc3545;
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    font-size: 1em;
+    transition: all 0.3s;
+}
+
+.btn-excluir:hover {
+    background: #c82333;
+    transform: scale(1.1);
+}
+
+.form-pilotos {
+    width: 100%;
+}
+
+.pilotos-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 15px;
+    align-items: end;
+}
+
+.piloto-select {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.piloto-select label {
+    color: #888;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.8em;
+}
+
+.piloto-select select {
+    padding: 10px;
+    border: 1px solid #444;
+    border-radius: 5px;
+    background: #1a1a1a;
+    color: #fff;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.85em;
+}
+
+.btn-salvar {
+    padding: 10px 20px;
+    background: #28a745;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    font-family: 'Orbitron', sans-serif;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 0.9em;
+    height: fit-content;
+}
+
+.btn-salvar:hover {
+    background: #218838;
+    transform: translateY(-2px);
+}
+
+.sem-dados {
+    color: #888;
+    text-align: center;
+    font-family: 'Orbitron', sans-serif;
+    padding: 20px;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+
+    .titulo {
+        font-size: 1.4em;
+    }
+
+    .card {
+        padding: 15px;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .pilotos-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .btn-salvar {
+        width: 100%;
+    }
+
+    .equipe-header {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+}
+</style>
+{% endblock %}

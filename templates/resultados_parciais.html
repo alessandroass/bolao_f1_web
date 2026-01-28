@@ -3,10 +3,14 @@
 {% block content %}
 <div class="container">
     <div class="header-buttons">
+        {% if from_historico %}
+        <a href="{{ url_for('ver_temporada', ano=ano) }}" class="btn-voltar">Voltar à Temporada</a>
+        {% else %}
         <a href="{{ url_for('classificacao') }}" class="btn-voltar">Voltar</a>
+        {% endif %}
     </div>
     
-    <h1 class="titulo">Resultados Parciais por Corrida</h1>
+    <h1 class="titulo">Resultados Parciais por Corrida {% if ano %}- {{ ano }}{% endif %}</h1>
     
     {% if classificacao %}
         <div class="table-container">

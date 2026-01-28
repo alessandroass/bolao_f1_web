@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Bolão F1 2025 - Seleção de GP{% endblock %}
+{% block title %}Bolão F1 2026 - Seleção de GP{% endblock %}
 
 {% block content %}
   <div class="container">
@@ -20,12 +20,17 @@
           </svg>
         </a>
       </div>
+      
+      <!-- Título centralizado no topo -->
       <h1 class="title">ESCOLHA UM GP PARA FAZER SEU PALPITE</h1>
+      
+      <!-- Navegação abaixo do título -->
       <div class="nav">
         <div class="nav-buttons">
           <a href="{{ url_for('calendario') }}">Calendário</a>
           <a href="{{ url_for('meus_resultados') }}">Meus Resultados</a>
           <a href="{{ url_for('classificacao') }}">Classificação Geral</a>
+          <a href="{{ url_for('historico_temporadas') }}" class="btn-historico">Histórico</a>
           {% if is_admin %}
           <a href="{{ url_for('admin') }}">Área Administrativa</a>
           {% endif %}
@@ -89,7 +94,7 @@
 
     .header {
       display: flex;
-      justify-content: space-between;
+      flex-direction: column;
       align-items: center;
       margin-bottom: 30px;
       position: relative;
@@ -100,19 +105,23 @@
       font-size: 2em;
       color: #e10600;
       font-family: 'Orbitron', sans-serif;
+      text-align: center;
+      margin-bottom: 25px;
+      width: 100%;
     }
     
     .nav {
       display: flex;
       justify-content: space-between;
-      align-items: flex-end;
+      align-items: center;
       width: 100%;
     }
 
     .nav-buttons {
       display: flex;
       gap: 15px;
-      align-items: flex-end;
+      align-items: center;
+      flex-wrap: wrap;
     }
 
     .nav a {
@@ -129,6 +138,14 @@
     .nav a:hover {
       background-color: #b80000;
       transform: translateY(-2px);
+    }
+
+    .nav a.btn-historico {
+      background-color: #9b59b6;
+    }
+
+    .nav a.btn-historico:hover {
+      background-color: #8e44ad;
     }
 
     .user-info {

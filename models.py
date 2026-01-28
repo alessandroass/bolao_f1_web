@@ -4,6 +4,35 @@ from datetime import datetime
 
 db = SQLAlchemy()
 
+class Temporada(db.Model):
+    """Modelo para gerenciar temporadas/anos do bolão"""
+    __tablename__ = 'temporadas'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    ano = db.Column(db.Integer, unique=True, nullable=False)
+    ativa = db.Column(db.Boolean, default=False)  # Apenas uma temporada pode estar ativa
+    arquivada = db.Column(db.Boolean, default=False)  # True quando a temporada terminou
+    data_inicio = db.Column(db.DateTime, nullable=True)
+    data_fim = db.Column(db.DateTime, nullable=True)
+    
+    # Relacionamentos
+    campeoes = db.relationship('CampeaoTemporada', backref='temporada', lazy=True)
+    
+    def __repr__(self):
+        return f'<Temporada {self.ano}>'
+
+class CampeaoTemporada(db.Model):
+    """Modelo para guardar os campeões de cada temporada"""
+    __tablename__ = 'campeoes_temporada'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    temporada_id = db.Column(db.Integer, db.ForeignKey('temporadas.id'), nullable=False)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    posicao = db.Column(db.Integer, nullable=False)  # 1, 2, 3 para pódio
+    pontos_total = db.Column(db.Integer, nullable=False)
+    
+    usuario = db.relationship('Usuario', backref=db.backref('titulos', lazy=True))
+
 class Usuario(db.Model):
     __tablename__ = 'usuarios'
     
@@ -20,6 +49,20 @@ class Usuario(db.Model):
     def check_password(self, password):
         return check_password_hash(self.password, password)
 
+class Equipe(db.Model):
+    __tablename__ = 'equipes'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(100), nullable=False, unique=True)
+    piloto1_id = db.Column(db.Integer, db.ForeignKey('pilotos.id'), nullable=True)
+    piloto2_id = db.Column(db.Integer, db.ForeignKey('pilotos.id'), nullable=True)
+    
+    piloto1 = db.relationship('Piloto', foreign_keys=[piloto1_id], backref='equipe_piloto1')
+    piloto2 = db.relationship('Piloto', foreign_keys=[piloto2_id], backref='equipe_piloto2')
+    
+    def __repr__(self):
+        return f'<Equipe {self.nome}>'
+
 class Piloto(db.Model):
     __tablename__ = 'pilotos'
     
@@ -32,6 +75,7 @@ class Palpite(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
     gp_slug = db.Column(db.String(80), nullable=False)
+    temporada_ano = db.Column(db.Integer, default=2025)  # Ano da temporada
     pos_1 = db.Column(db.String(80))
     pos_2 = db.Column(db.String(80))
     pos_3 = db.Column(db.String(80))
@@ -45,7 +89,7 @@ class Palpite(db.Model):
     pole = db.Column(db.String(80))
     
     __table_args__ = (
-        db.UniqueConstraint('usuario_id', 'gp_slug', name='uq_usuario_gp'),
+        db.UniqueConstraint('usuario_id', 'gp_slug', 'temporada_ano', name='uq_usuario_gp_temporada'),
     )
     
     usuario = db.relationship('Usuario', backref=db.backref('palpites', lazy=True))
@@ -54,7 +98,8 @@ class Resposta(db.Model):
     __tablename__ = 'respostas'
     
     id = db.Column(db.Integer, primary_key=True)
-    gp_slug = db.Column(db.String(80), unique=True, nullable=False)
+    gp_slug = db.Column(db.String(80), nullable=False)
+    temporada_ano = db.Column(db.Integer, default=2025)  # Ano da temporada
     pos_1 = db.Column(db.String(80))
     pos_2 = db.Column(db.String(80))
     pos_3 = db.Column(db.String(80))
@@ -66,6 +111,10 @@ class Resposta(db.Model):
     pos_9 = db.Column(db.String(80))
     pos_10 = db.Column(db.String(80))
     pole = db.Column(db.String(80))
+    
+    __table_args__ = (
+        db.UniqueConstraint('gp_slug', 'temporada_ano', name='uq_gp_temporada'),
+    )
 
 class Pontuacao(db.Model):
     __tablename__ = 'pontuacao'
@@ -86,16 +135,38 @@ class GP(db.Model):
     __tablename__ = 'gps'
     
     id = db.Column(db.Integer, primary_key=True)
-    slug = db.Column(db.String(80), unique=True, nullable=False)
+    slug = db.Column(db.String(80), nullable=False)
+    temporada_ano = db.Column(db.Integer, default=2025)  # Ano da temporada
     nome = db.Column(db.String(80), nullable=False)
     data_corrida = db.Column(db.String(10), nullable=False)
     hora_corrida = db.Column(db.String(5), nullable=False)
     data_classificacao = db.Column(db.String(10), nullable=False)
     hora_classificacao = db.Column(db.String(5), nullable=False)
+    
+    __table_args__ = (
+        db.UniqueConstraint('slug', 'temporada_ano', name='uq_gp_slug_temporada'),
+    )
 
 class PontuacaoSprint(db.Model):
     __tablename__ = 'pontuacao_sprint'
     
     id = db.Column(db.Integer, primary_key=True)
     posicao = db.Column(db.Integer, unique=True, nullable=False)
-    pontos = db.Column(db.Integer, nullable=False) 
+    pontos = db.Column(db.Integer, nullable=False)
+
+class EquipeTemporada(db.Model):
+    """Snapshot das equipes e seus pilotos em cada temporada - protege o histórico"""
+    __tablename__ = 'equipes_temporada'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    temporada_ano = db.Column(db.Integer, nullable=False)
+    equipe_nome = db.Column(db.String(100), nullable=False)
+    piloto1_nome = db.Column(db.String(80), nullable=True)
+    piloto2_nome = db.Column(db.String(80), nullable=True)
+    
+    __table_args__ = (
+        db.UniqueConstraint('temporada_ano', 'equipe_nome', name='uq_equipe_temporada'),
+    )
+    
+    def __repr__(self):
+        return f'<EquipeTemporada {self.equipe_nome} - {self.temporada_ano}>'

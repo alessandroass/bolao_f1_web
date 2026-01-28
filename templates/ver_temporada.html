@@ -1,0 +1,733 @@
+{% extends "base.html" %}
+
+{% block title %}Temporada {{ temporada.ano }} - Bolão F1{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header">
+        <a href="{{ url_for('historico_temporadas') }}" class="back-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+        </a>
+        <h1 class="title">🏆 TEMPORADA {{ temporada.ano }}</h1>
+        {% if temporada.ativa %}
+            <span class="badge ativa">EM ANDAMENTO</span>
+        {% elif temporada.arquivada %}
+            <span class="badge arquivada">ENCERRADA</span>
+        {% endif %}
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Botões de Ação -->
+    <div class="action-buttons">
+        <a href="{{ url_for('resultados_parciais', ano=temporada.ano) }}" class="btn-action btn-resultados">
+            📊 Resultados por GP
+        </a>
+        <a href="{{ url_for('classificacao_pilotos', ano=temporada.ano) }}" class="btn-action btn-pilotos">
+            🏎️ Classificação Pilotos
+        </a>
+        <a href="{{ url_for('classificacao_construtores', ano=temporada.ano) }}" class="btn-action btn-construtores">
+            🏭 Construtores
+        </a>
+    </div>
+
+    <!-- Pódio dos Campeões - Estilo F1 Real -->
+    {% if campeoes %}
+    <div class="podio-section">
+        <h2>🏆 PÓDIO FINAL 🏆</h2>
+        <div class="podio-container">
+            <!-- Área dos competidores (parte de cima) -->
+            <div class="podio-competidores">
+                {% for campeao in campeoes %}
+                {% if campeao.posicao == 2 %}
+                <div class="competidor competidor-2">
+                    <div class="competidor-avatar">
+                        <span>{{ (campeao.usuario.first_name or campeao.usuario.username)[0] | upper }}</span>
+                    </div>
+                    <div class="competidor-nome">{{ campeao.usuario.username }}</div>
+                    <div class="competidor-pontos">{{ campeao.pontos_total }} pts</div>
+                </div>
+                {% endif %}
+                {% endfor %}
+                
+                {% for campeao in campeoes %}
+                {% if campeao.posicao == 1 %}
+                <div class="competidor competidor-1">
+                    <div class="trofeu">🏆</div>
+                    <div class="competidor-avatar ouro">
+                        <span>{{ (campeao.usuario.first_name or campeao.usuario.username)[0] | upper }}</span>
+                    </div>
+                    <div class="competidor-nome campeao">{{ campeao.usuario.username }}</div>
+                    <div class="competidor-pontos">{{ campeao.pontos_total }} pts</div>
+                </div>
+                {% endif %}
+                {% endfor %}
+                
+                {% for campeao in campeoes %}
+                {% if campeao.posicao == 3 %}
+                <div class="competidor competidor-3">
+                    <div class="competidor-avatar">
+                        <span>{{ (campeao.usuario.first_name or campeao.usuario.username)[0] | upper }}</span>
+                    </div>
+                    <div class="competidor-nome">{{ campeao.usuario.username }}</div>
+                    <div class="competidor-pontos">{{ campeao.pontos_total }} pts</div>
+                </div>
+                {% endif %}
+                {% endfor %}
+            </div>
+            
+            <!-- Degraus do pódio (parte de baixo) -->
+            <div class="podio-degraus">
+                <div class="degrau degrau-2">
+                    <span class="degrau-numero">2</span>
+                </div>
+                <div class="degrau degrau-1">
+                    <span class="degrau-numero">1</span>
+                </div>
+                <div class="degrau degrau-3">
+                    <span class="degrau-numero">3</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Classificação Completa -->
+    <div class="classificacao-section">
+        <h2>📊 Classificação Completa</h2>
+        
+        {% if classificacao %}
+        <div class="table-responsive">
+            <table class="tabela-classificacao">
+                <thead>
+                    <tr>
+                        <th>Posição</th>
+                        <th>Usuário</th>
+                        <th>Pontuação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in classificacao %}
+                    <tr class="{% if loop.index == 1 %}primeiro{% elif loop.index == 2 %}segundo{% elif loop.index == 3 %}terceiro{% endif %}">
+                        <td class="posicao">{{ loop.index }}º</td>
+                        <td class="usuario">{{ item.usuario.username }}</td>
+                        <td class="pontos">{{ item.total_pontos }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="sem-dados">
+            <p>Nenhum dado encontrado para esta temporada.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Botão Admin para registrar campeões -->
+    {% if is_admin and not campeoes and temporada.arquivada %}
+    <div class="admin-actions">
+        <a href="{{ url_for('admin_registrar_campeoes', ano=temporada.ano) }}" class="btn-admin">
+            Registrar Campeões
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .header {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 30px;
+        position: relative;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+
+    /* Botões de Ação */
+    .action-buttons {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+    }
+
+    .btn-action {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 25px;
+        border-radius: 25px;
+        text-decoration: none;
+        font-family: 'Orbitron', sans-serif;
+        font-weight: bold;
+        transition: all 0.3s;
+    }
+
+    .btn-resultados {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: #fff;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-resultados:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+    }
+
+    .btn-pilotos {
+        background: linear-gradient(135deg, #e10600, #b80000);
+        color: #fff;
+        box-shadow: 0 4px 15px rgba(225, 6, 0, 0.4);
+    }
+
+    .btn-pilotos:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(225, 6, 0, 0.6);
+    }
+
+    .btn-construtores {
+        background: linear-gradient(135deg, #f39c12, #e67e22);
+        color: #fff;
+        box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4);
+    }
+
+    .btn-construtores:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(243, 156, 18, 0.6);
+    }
+
+    .back-button {
+        position: absolute;
+        left: 0;
+        padding: 8px;
+        background: rgba(26, 26, 26, 0.8);
+        border-radius: 50%;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+
+    .back-button:hover {
+        background: rgba(26, 26, 26, 1);
+        transform: translateY(-2px);
+    }
+
+    .back-button svg {
+        width: 24px;
+        height: 24px;
+        color: #e10600;
+    }
+
+    .title {
+        text-align: center;
+        font-size: 2em;
+        color: #e10600;
+        font-family: 'Orbitron', sans-serif;
+        margin: 0;
+    }
+
+    .badge {
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-size: 0.8em;
+        font-family: 'Orbitron', sans-serif;
+        font-weight: bold;
+    }
+
+    .badge.ativa {
+        background: #2ecc71;
+        color: #fff;
+    }
+
+    .badge.arquivada {
+        background: #666;
+        color: #fff;
+    }
+
+    /* Pódio Visual - Estilo F1 Real */
+    .podio-section {
+        background: linear-gradient(180deg, rgba(26, 26, 26, 0.95), rgba(15, 15, 15, 0.98));
+        border-radius: 20px;
+        padding: 30px 20px;
+        margin-bottom: 30px;
+        box-shadow: 0 0 40px rgba(225, 6, 0, 0.4);
+        border: 1px solid rgba(225, 6, 0, 0.3);
+    }
+
+    .podio-section h2 {
+        text-align: center;
+        color: #FFD700;
+        font-family: 'Orbitron', sans-serif;
+        margin-bottom: 30px;
+        font-size: 1.8em;
+        text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+    }
+
+    .podio-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    /* Competidores - Parte de cima do pódio */
+    .podio-competidores {
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        gap: 10px;
+        width: 100%;
+        max-width: 500px;
+    }
+
+    .competidor {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 15px 10px;
+        flex: 1;
+        max-width: 160px;
+    }
+
+    .competidor-1 {
+        margin-bottom: 20px; /* Fica mais alto visualmente */
+    }
+
+    .competidor-2, .competidor-3 {
+        margin-bottom: 0;
+    }
+
+    .trofeu {
+        font-size: 2.5em;
+        margin-bottom: 10px;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+
+    .competidor-avatar {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5em;
+        font-weight: bold;
+        font-family: 'Orbitron', sans-serif;
+        color: #1a1a1a;
+        margin-bottom: 10px;
+        background: #C0C0C0;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    }
+
+    .competidor-1 .competidor-avatar {
+        width: 80px;
+        height: 80px;
+        font-size: 2em;
+        background: linear-gradient(135deg, #FFD700, #FFA500);
+        box-shadow: 0 0 30px rgba(255, 215, 0, 0.6);
+        border: 3px solid #fff;
+    }
+
+    .competidor-2 .competidor-avatar {
+        background: linear-gradient(135deg, #C0C0C0, #A0A0A0);
+        box-shadow: 0 0 20px rgba(192, 192, 192, 0.5);
+    }
+
+    .competidor-3 .competidor-avatar {
+        background: linear-gradient(135deg, #CD7F32, #8B4513);
+        box-shadow: 0 0 20px rgba(205, 127, 50, 0.5);
+    }
+
+    .competidor-nome {
+        color: #fff;
+        font-family: 'Orbitron', sans-serif;
+        font-size: 0.9em;
+        text-align: center;
+        margin-bottom: 5px;
+    }
+
+    .competidor-nome.campeao {
+        color: #FFD700;
+        font-size: 1.1em;
+        font-weight: bold;
+        text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+    }
+
+    .competidor-pontos {
+        color: #2ecc71;
+        font-family: 'Orbitron', sans-serif;
+        font-weight: bold;
+        font-size: 0.9em;
+    }
+
+    /* Degraus do Pódio - Estilo F1 */
+    .podio-degraus {
+        display: flex;
+        justify-content: center;
+        align-items: flex-end;
+        width: 100%;
+        max-width: 500px;
+        gap: 5px;
+    }
+
+    .degrau {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex: 1;
+        max-width: 160px;
+        border-radius: 8px 8px 0 0;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .degrau::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+    }
+
+    .degrau-1 {
+        height: 100px;
+        background: linear-gradient(180deg, #FFD700 0%, #B8860B 100%);
+    }
+
+    .degrau-1::before {
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+    }
+
+    .degrau-2 {
+        height: 70px;
+        background: linear-gradient(180deg, #C0C0C0 0%, #808080 100%);
+    }
+
+    .degrau-2::before {
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    }
+
+    .degrau-3 {
+        height: 50px;
+        background: linear-gradient(180deg, #CD7F32 0%, #8B4513 100%);
+    }
+
+    .degrau-3::before {
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    }
+
+    .degrau-numero {
+        font-family: 'Orbitron', sans-serif;
+        font-size: 2em;
+        font-weight: bold;
+        color: rgba(0, 0, 0, 0.3);
+    }
+
+    /* Classificação */
+    .classificacao-section {
+        background: rgba(26, 26, 26, 0.9);
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 30px;
+    }
+
+    .classificacao-section h2 {
+        text-align: center;
+        color: #e10600;
+        font-family: 'Orbitron', sans-serif;
+        margin-bottom: 20px;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    .tabela-classificacao {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .tabela-classificacao th {
+        background: linear-gradient(to bottom, #e10600, #b80000);
+        color: #fff;
+        font-family: 'Orbitron', sans-serif;
+        padding: 15px;
+        text-align: center;
+    }
+
+    .tabela-classificacao td {
+        padding: 12px;
+        text-align: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        color: #fff;
+        font-family: 'Orbitron', sans-serif;
+    }
+
+    .tabela-classificacao tr:hover {
+        background: rgba(225, 6, 0, 0.2);
+    }
+
+    .tabela-classificacao .posicao {
+        font-weight: bold;
+        color: #e10600;
+        font-size: 1.1em;
+    }
+
+    .tabela-classificacao .pontos {
+        font-weight: bold;
+        color: #2ecc71;
+    }
+
+    .primeiro {
+        background: linear-gradient(to right, rgba(255, 215, 0, 0.3), transparent);
+    }
+    .primeiro .posicao { color: #FFD700; }
+
+    .segundo {
+        background: linear-gradient(to right, rgba(192, 192, 192, 0.3), transparent);
+    }
+    .segundo .posicao { color: #C0C0C0; }
+
+    .terceiro {
+        background: linear-gradient(to right, rgba(205, 127, 50, 0.3), transparent);
+    }
+    .terceiro .posicao { color: #CD7F32; }
+
+    .sem-dados {
+        text-align: center;
+        padding: 30px;
+        color: #888;
+        font-family: 'Orbitron', sans-serif;
+    }
+
+    .admin-actions {
+        text-align: center;
+        margin-top: 20px;
+    }
+
+    .btn-admin {
+        display: inline-block;
+        padding: 15px 30px;
+        background: #e10600;
+        color: #fff;
+        text-decoration: none;
+        border-radius: 25px;
+        font-family: 'Orbitron', sans-serif;
+        transition: all 0.3s;
+    }
+
+    .btn-admin:hover {
+        background: #b80000;
+        transform: translateY(-2px);
+    }
+
+    .alert {
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+        font-family: 'Orbitron', sans-serif;
+    }
+
+    .alert-success {
+        background-color: rgba(40, 167, 69, 0.2);
+        border: 1px solid #28a745;
+        color: #28a745;
+    }
+
+    .alert-error {
+        background-color: rgba(220, 53, 69, 0.2);
+        border: 1px solid #dc3545;
+        color: #dc3545;
+    }
+
+    @media (max-width: 768px) {
+        .container {
+            padding: 10px;
+        }
+
+        .header {
+            padding: 0 10px;
+        }
+
+        .title {
+            font-size: 1.2em;
+            padding: 0 40px;
+        }
+
+        .badge {
+            font-size: 0.7em;
+            padding: 4px 10px;
+        }
+
+        .action-buttons {
+            margin-bottom: 20px;
+        }
+
+        .btn-action {
+            padding: 10px 20px;
+            font-size: 0.85em;
+        }
+
+        .podio-section {
+            padding: 20px 10px;
+            border-radius: 15px;
+        }
+
+        .podio-section h2 {
+            font-size: 1.3em;
+            margin-bottom: 20px;
+        }
+
+        /* Pódio Mobile - Mantém formato de pódio real */
+        .podio-competidores {
+            gap: 5px;
+        }
+
+        .competidor {
+            padding: 10px 5px;
+        }
+
+        .competidor-1 {
+            margin-bottom: 15px;
+        }
+
+        .trofeu {
+            font-size: 1.8em;
+            margin-bottom: 5px;
+        }
+
+        .competidor-avatar {
+            width: 45px;
+            height: 45px;
+            font-size: 1.2em;
+        }
+
+        .competidor-1 .competidor-avatar {
+            width: 55px;
+            height: 55px;
+            font-size: 1.4em;
+        }
+
+        .competidor-nome {
+            font-size: 0.7em;
+        }
+
+        .competidor-nome.campeao {
+            font-size: 0.8em;
+        }
+
+        .competidor-pontos {
+            font-size: 0.7em;
+        }
+
+        /* Degraus Mobile */
+        .podio-degraus {
+            gap: 3px;
+        }
+
+        .degrau-1 {
+            height: 70px;
+        }
+
+        .degrau-2 {
+            height: 50px;
+        }
+
+        .degrau-3 {
+            height: 35px;
+        }
+
+        .degrau-numero {
+            font-size: 1.3em;
+        }
+
+        /* Tabela responsiva */
+        .classificacao-section {
+            padding: 15px 10px;
+        }
+
+        .classificacao-section h2 {
+            font-size: 1.1em;
+        }
+
+        .tabela-classificacao th,
+        .tabela-classificacao td {
+            padding: 8px 5px;
+            font-size: 0.8em;
+        }
+    }
+
+    /* Telas muito pequenas */
+    @media (max-width: 400px) {
+        .podio-section h2 {
+            font-size: 1.1em;
+        }
+
+        .competidor-avatar {
+            width: 40px;
+            height: 40px;
+            font-size: 1em;
+        }
+
+        .competidor-1 .competidor-avatar {
+            width: 50px;
+            height: 50px;
+            font-size: 1.2em;
+        }
+
+        .trofeu {
+            font-size: 1.5em;
+        }
+
+        .competidor-nome {
+            font-size: 0.65em;
+        }
+
+        .competidor-pontos {
+            font-size: 0.65em;
+        }
+
+        .degrau-1 {
+            height: 60px;
+        }
+
+        .degrau-2 {
+            height: 40px;
+        }
+
+        .degrau-3 {
+            height: 28px;
+        }
+
+        .degrau-numero {
+            font-size: 1em;
+        }
+    }
+</style>
+{% endblock %}

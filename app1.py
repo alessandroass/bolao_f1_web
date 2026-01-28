@@ -5,7 +5,10 @@ import random
 import string
 from datetime import datetime, timedelta
 import pytz
-from models import db, Usuario, Piloto, Palpite, Resposta, Pontuacao, ConfigVotacao, GP, PontuacaoSprint
+from models import db, Usuario, Piloto, Palpite, Resposta, Pontuacao, ConfigVotacao, GP, PontuacaoSprint, Temporada, CampeaoTemporada, Equipe, EquipeTemporada
+
+# Temporada ativa é sempre o ano atual (detectado automaticamente)
+TEMPORADA_ATIVA = datetime.now().year
 from config import Config
 from config_local import ConfigLocal
 from reset_admin import reset_admin_password  # Importando a função de reset do admin
@@ -84,10 +87,154 @@ def sincronizar_gps_banco():
         print(f"Erro ao sincronizar GPs: {str(e)}")
         db.session.rollback()
 
+def salvar_snapshot_equipes(ano):
+    """Salva um snapshot das equipes e seus pilotos para a temporada especificada"""
+    try:
+        # Verificar se já existe snapshot para essa temporada
+        snapshot_existente = EquipeTemporada.query.filter_by(temporada_ano=ano).first()
+        if snapshot_existente:
+            print(f"Snapshot da temporada {ano} já existe, pulando...")
+            return True
+        
+        # Buscar todas as equipes atuais
+        equipes = Equipe.query.all()
+        
+        for equipe in equipes:
+            novo_snapshot = EquipeTemporada(
+                temporada_ano=ano,
+                equipe_nome=equipe.nome,
+                piloto1_nome=equipe.piloto1.nome if equipe.piloto1 else None,
+                piloto2_nome=equipe.piloto2.nome if equipe.piloto2 else None
+            )
+            db.session.add(novo_snapshot)
+        
+        db.session.commit()
+        print(f"Snapshot das equipes salvo para temporada {ano}")
+        return True
+    except Exception as e:
+        print(f"Erro ao salvar snapshot: {str(e)}")
+        db.session.rollback()
+        return False
+
+def inicializar_temporadas():
+    """
+    Inicializa as temporadas no banco de dados de forma AUTOMÁTICA.
+    - Anos anteriores ao atual são arquivados
+    - O ano atual é a temporada ativa
+    - Funciona para qualquer ano (2026, 2027, 2028, etc.)
+    """
+    try:
+        ano_atual = datetime.now().year
+        print(f"Ano atual detectado: {ano_atual}")
+        
+        # Garante que a temporada 2025 existe (primeira temporada do sistema)
+        temporada_2025 = Temporada.query.filter_by(ano=2025).first()
+        if not temporada_2025:
+            temporada_2025 = Temporada(
+                ano=2025,
+                ativa=False,
+                arquivada=True,
+                data_inicio=datetime(2025, 3, 16),
+                data_fim=datetime(2025, 12, 7)
+            )
+            db.session.add(temporada_2025)
+            print("Temporada 2025 criada (arquivada - primeira temporada)")
+        
+        # Arquiva TODAS as temporadas de anos anteriores ao atual
+        temporadas_anteriores = Temporada.query.filter(Temporada.ano < ano_atual).all()
+        for temp in temporadas_anteriores:
+            if temp.ativa or not temp.arquivada:
+                temp.ativa = False
+                temp.arquivada = True
+                # Define data_fim se não tiver
+                if not temp.data_fim:
+                    temp.data_fim = datetime(temp.ano, 12, 31)
+                
+                # Salva snapshot das equipes se ainda não existir
+                snapshot_existente = EquipeTemporada.query.filter_by(temporada_ano=temp.ano).first()
+                if not snapshot_existente:
+                    salvar_snapshot_equipes(temp.ano)
+                
+                print(f"Temporada {temp.ano} arquivada automaticamente")
+        
+        # Cria temporadas intermediárias se não existirem (ex: se pular de 2025 para 2028)
+        for ano in range(2026, ano_atual):
+            temp_intermediaria = Temporada.query.filter_by(ano=ano).first()
+            if not temp_intermediaria:
+                temp_intermediaria = Temporada(
+                    ano=ano,
+                    ativa=False,
+                    arquivada=True,
+                    data_inicio=datetime(ano, 3, 1),
+                    data_fim=datetime(ano, 12, 31)
+                )
+                db.session.add(temp_intermediaria)
+                print(f"Temporada {ano} criada (arquivada - intermediária)")
+        
+        # Verifica/cria a temporada do ano atual (ATIVA)
+        temporada_atual = Temporada.query.filter_by(ano=ano_atual).first()
+        if not temporada_atual:
+            temporada_atual = Temporada(
+                ano=ano_atual,
+                ativa=True,
+                arquivada=False,
+                data_inicio=datetime(ano_atual, 3, 1),
+                data_fim=None
+            )
+            db.session.add(temporada_atual)
+            print(f"Temporada {ano_atual} criada (ATIVA)")
+        else:
+            # Garante que a temporada atual esteja ativa
+            temporada_atual.ativa = True
+            temporada_atual.arquivada = False
+            print(f"Temporada {ano_atual} atualizada (ATIVA)")
+        
+        db.session.commit()
+        print(f"Temporadas inicializadas com sucesso! Temporada ativa: {ano_atual}")
+    except Exception as e:
+        print(f"Erro ao inicializar temporadas: {str(e)}")
+        db.session.rollback()
+
+def migrar_banco_automatico():
+    """Adiciona novas colunas em tabelas existentes (migração automática)"""
+    try:
+        from sqlalchemy import text
+        
+        # Lista de migrações a executar
+        migracoes = [
+            ("palpites", "temporada_ano", "INTEGER DEFAULT 2025"),
+            ("respostas", "temporada_ano", "INTEGER DEFAULT 2025"),
+            ("gps", "temporada_ano", "INTEGER DEFAULT 2025"),
+        ]
+        
+        for tabela, coluna, tipo in migracoes:
+            try:
+                # Verifica se a coluna já existe
+                result = db.session.execute(text(f"""
+                    SELECT column_name FROM information_schema.columns 
+                    WHERE table_name = '{tabela}' AND column_name = '{coluna}'
+                """))
+                if not result.fetchone():
+                    # Adiciona a coluna se não existir
+                    db.session.execute(text(f"ALTER TABLE {tabela} ADD COLUMN {coluna} {tipo}"))
+                    db.session.commit()
+                    print(f"  ✓ Coluna '{coluna}' adicionada em '{tabela}'")
+            except Exception as e:
+                db.session.rollback()
+                # Ignora erros (coluna pode já existir)
+                pass
+        
+        print("Migração automática verificada!")
+    except Exception as e:
+        print(f"Aviso na migração: {e}")
+
 def verificar_banco_existe():
     with app.app_context():
         # Cria as tabelas se não existirem
         db.create_all()
+        
+        # Executa migração automática (adiciona novas colunas se necessário)
+        migrar_banco_automatico()
         
         # Verifica se o admin existe
         admin = Usuario.query.filter_by(username='admin').first()
@@ -97,11 +244,11 @@ def verificar_banco_existe():
         else:
             print("Banco de dados já existe, apenas verificando admin...")
         
+        # Inicializa as temporadas
+        inicializar_temporadas()
+        
         # Sincroniza os GPs com o banco de dados
         sincronizar_gps_banco()
-
-# Verifica e inicializa o banco de dados
-verificar_banco_existe()
 
 # Lista dos GPs (nome da rota, nome para exibição, data da corrida, hora da corrida, data da classificação, hora da classificação)
 gps_2025 = [
@@ -146,6 +293,9 @@ grid_2025 = [
     "Pierre Gasly", "Franco Colapinto", "Niko Hulkenberg", "Gabriel Bortoleto",
     "Esteban Ocon", "Oliver Bearman", "Carlos Sainz", "Alexander Albon"
 ]
+
+# Verifica e inicializa o banco de dados
+verificar_banco_existe()
 
 # Decorator para verificar se o usuário é admin
 def admin_required(f):
@@ -245,12 +395,12 @@ def tela_gps():
     # Buscar o usuário
     usuario = Usuario.query.get(session['user_id'])
     
-    # Buscar todos os palpites do usuário
-    palpites_existentes = [p.gp_slug for p in usuario.palpites]
+    # Buscar todos os palpites do usuário DA TEMPORADA ATIVA
+    palpites_existentes = [p.gp_slug for p in Palpite.query.filter_by(usuario_id=usuario.id, temporada_ano=TEMPORADA_ATIVA).all()]
     
-    # Buscar todos os palpites e respostas para calcular a pontuação
-    palpites = Palpite.query.filter_by(usuario_id=usuario.id).all()
-    respostas = {r.gp_slug: r for r in Resposta.query.all()}
+    # Buscar todos os palpites e respostas para calcular a pontuação DA TEMPORADA ATIVA
+    palpites = Palpite.query.filter_by(usuario_id=usuario.id, temporada_ano=TEMPORADA_ATIVA).all()
+    respostas = {r.gp_slug: r for r in Resposta.query.filter_by(temporada_ano=TEMPORADA_ATIVA).all()}
     pontuacao = {p.posicao: p.pontos for p in Pontuacao.query.all()}
     pontuacao_sprint = {p.posicao: p.pontos for p in PontuacaoSprint.query.all()}
     
@@ -282,7 +432,7 @@ def tela_gps():
     
     for user in usuarios:
         pontos_user = 0
-        palpites_user = Palpite.query.filter_by(usuario_id=user.id).all()
+        palpites_user = Palpite.query.filter_by(usuario_id=user.id, temporada_ano=TEMPORADA_ATIVA).all()
         
         for palpite in palpites_user:
             resposta = respostas.get(palpite.gp_slug)
@@ -376,10 +526,11 @@ def tela_palpite_gp(nome_gp):
         for key, value in request.form.items():
             print(f"{key}: {value}")
         
-        # Verifica se já existe um palpite para este GP
+        # Verifica se já existe um palpite para este GP na temporada ativa
         palpite_existente = Palpite.query.filter_by(
             usuario_id=session['user_id'],
-            gp_slug=nome_gp
+            gp_slug=nome_gp,
+            temporada_ano=TEMPORADA_ATIVA
         ).first()
         
         # Debug: Imprimir palpite existente
@@ -473,6 +624,7 @@ def tela_palpite_gp(nome_gp):
                     novo_palpite = Palpite(
                         usuario_id=session['user_id'],
                         gp_slug=nome_gp,
+                        temporada_ano=TEMPORADA_ATIVA,
                         pos_1=posicoes[0],
                         pos_2=posicoes[1],
                         pos_3=posicoes[2],
@@ -495,10 +647,11 @@ def tela_palpite_gp(nome_gp):
                     mensagem = 'Erro ao salvar o palpite!'
                     tipo_mensagem = 'error'
 
-    # Busca palpite existente
+    # Busca palpite existente na temporada ativa
     palpite = Palpite.query.filter_by(
         usuario_id=session['user_id'],
-        gp_slug=nome_gp
+        gp_slug=nome_gp,
+        temporada_ano=TEMPORADA_ATIVA
     ).first()
 
     nome_gp_exibicao = next((nome for slug, nome, _, _, _, _ in gps_2025 if slug == nome_gp), "GP Desconhecido")
@@ -557,9 +710,9 @@ def meus_resultados():
     if 'username' not in session:
         return redirect(url_for('login'))
     
-    # Busca todos os palpites do usuário com as respostas correspondentes
-    palpites = Palpite.query.filter_by(usuario_id=session['user_id']).all()
-    respostas = {r.gp_slug: r for r in Resposta.query.all()}
+    # Busca todos os palpites do usuário DA TEMPORADA ATIVA
+    palpites = Palpite.query.filter_by(usuario_id=session['user_id'], temporada_ano=TEMPORADA_ATIVA).all()
+    respostas = {r.gp_slug: r for r in Resposta.query.filter_by(temporada_ano=TEMPORADA_ATIVA).all()}
     pontuacao = {p.posicao: p.pontos for p in Pontuacao.query.all()}
     pontuacao_sprint = {p.posicao: p.pontos for p in PontuacaoSprint.query.all()}
     
@@ -628,9 +781,9 @@ def classificacao():
     # Busca todos os usuários (exceto admin)
     usuarios = Usuario.query.filter(Usuario.username != 'admin').all()
     
-    # Busca todos os palpites e respostas
-    palpites = Palpite.query.all()
-    respostas = {r.gp_slug: r for r in Resposta.query.all()}
+    # Busca todos os palpites e respostas DA TEMPORADA ATIVA
+    palpites = Palpite.query.filter_by(temporada_ano=TEMPORADA_ATIVA).all()
+    respostas = {r.gp_slug: r for r in Resposta.query.filter_by(temporada_ano=TEMPORADA_ATIVA).all()}
     pontuacao = {p.posicao: p.pontos for p in Pontuacao.query.all()}
     pontuacao_sprint = {p.posicao: p.pontos for p in PontuacaoSprint.query.all()}
     
@@ -669,7 +822,139 @@ def classificacao():
     # Ordena por total de pontos
     classificacao.sort(key=lambda x: x['total_pontos'], reverse=True)
     
-    return render_template('classificacao.html', classificacao=classificacao)
+    # Verifica se a temporada já encerrou (TODAS as corridas têm resultado oficial)
+    # Conta quantas corridas regulares (não sprint) existem
+    total_corridas = len([gp for gp in gps_2025 if not gp[0].startswith('sprint')])
+    
+    # Conta quantas respostas oficiais existem para a temporada ativa
+    respostas_cadastradas = Resposta.query.filter(
+        Resposta.temporada_ano == TEMPORADA_ATIVA,
+        ~Resposta.gp_slug.startswith('sprint')
+    ).count()
+    
+    # Temporada encerrada = todas as corridas têm resultado oficial
+    temporada_encerrada = respostas_cadastradas >= total_corridas and total_corridas > 0
+    
+    return render_template('classificacao.html', 
+                          classificacao=classificacao,
+                          temporada_encerrada=temporada_encerrada)
+
+# Classificação de Pilotos F1 da Temporada Atual
+@app.route('/classificacao-pilotos-atual')
+def classificacao_pilotos_atual():
+    """Classificação dos pilotos de F1 baseada nos resultados oficiais da temporada atual"""
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    pontos_f1 = {1: 25, 2: 18, 3: 15, 4: 12, 5: 10, 6: 8, 7: 6, 8: 4, 9: 2, 10: 1}
+    respostas = Resposta.query.filter_by(temporada_ano=TEMPORADA_ATIVA).all()
+    pilotos_pontos = {}
+    
+    for resposta in respostas:
+        is_sprint = resposta.gp_slug.startswith('sprint')
+        pontos_usar = {1: 8, 2: 7, 3: 6, 4: 5, 5: 4, 6: 3, 7: 2, 8: 1} if is_sprint else pontos_f1
+        
+        for pos in range(1, 11):
+            piloto_codigo = getattr(resposta, f'pos_{pos}', None)
+            if piloto_codigo:
+                if piloto_codigo not in pilotos_pontos:
+                    pilotos_pontos[piloto_codigo] = {'pontos': 0, 'vitorias': 0, 'podios': 0}
+                pilotos_pontos[piloto_codigo]['pontos'] += pontos_usar.get(pos, 0)
+                if pos == 1 and not is_sprint:
+                    pilotos_pontos[piloto_codigo]['vitorias'] += 1
+                if pos <= 3 and not is_sprint:
+                    pilotos_pontos[piloto_codigo]['podios'] += 1
+    
+    # Buscar TODOS os pilotos cadastrados
+    todos_pilotos = Piloto.query.all()
+    classificacao_pilotos = []
+    
+    for piloto in todos_pilotos:
+        dados = pilotos_pontos.get(piloto.nome, {'pontos': 0, 'vitorias': 0, 'podios': 0})
+        classificacao_pilotos.append({
+            'codigo': piloto.nome,
+            'nome': piloto.nome,
+            'pontos': dados['pontos'],
+            'vitorias': dados['vitorias'],
+            'podios': dados['podios']
+        })
+    
+    classificacao_pilotos.sort(key=lambda x: (-x['pontos'], -x['vitorias'], -x['podios'], x['nome']))
+    
+    # Verifica se a temporada está encerrada
+    total_corridas_calendario = len([gp for gp in gps_2025 if not gp[0].startswith('sprint')])
+    total_corridas_realizadas = len([r for r in respostas if not r.gp_slug.startswith('sprint')])
+    temporada_encerrada = total_corridas_realizadas >= total_corridas_calendario and total_corridas_calendario > 0
+    
+    return render_template('classificacao_pilotos_atual.html',
+                         temporada_ano=TEMPORADA_ATIVA,
+                         classificacao=classificacao_pilotos,
+                         total_corridas=total_corridas_realizadas,
+                         temporada_encerrada=temporada_encerrada)
+
+# Classificação de Construtores da Temporada Atual
+@app.route('/classificacao-construtores-atual')
+def classificacao_construtores_atual():
+    """Campeonato de Construtores da temporada atual"""
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    pontos_f1 = {1: 25, 2: 18, 3: 15, 4: 12, 5: 10, 6: 8, 7: 6, 8: 4, 9: 2, 10: 1}
+    respostas = Resposta.query.filter_by(temporada_ano=TEMPORADA_ATIVA).all()
+    pilotos_pontos = {}
+    
+    for resposta in respostas:
+        is_sprint = resposta.gp_slug.startswith('sprint')
+        pontos_usar = {1: 8, 2: 7, 3: 6, 4: 5, 5: 4, 6: 3, 7: 2, 8: 1} if is_sprint else pontos_f1
+        
+        for pos in range(1, 11):
+            piloto_codigo = getattr(resposta, f'pos_{pos}', None)
+            if piloto_codigo:
+                if piloto_codigo not in pilotos_pontos:
+                    pilotos_pontos[piloto_codigo] = {'pontos': 0, 'vitorias': 0}
+                pilotos_pontos[piloto_codigo]['pontos'] += pontos_usar.get(pos, 0)
+                if pos == 1 and not is_sprint:
+                    pilotos_pontos[piloto_codigo]['vitorias'] += 1
+    
+    equipes = Equipe.query.all()
+    classificacao_equipes = []
+    
+    for equipe in equipes:
+        pontos_equipe = 0
+        vitorias_equipe = 0
+        pilotos_equipe = []
+        
+        if equipe.piloto1:
+            dados_p1 = pilotos_pontos.get(equipe.piloto1.nome, {'pontos': 0, 'vitorias': 0})
+            pontos_equipe += dados_p1['pontos']
+            vitorias_equipe += dados_p1['vitorias']
+            pilotos_equipe.append({'nome': equipe.piloto1.nome, 'pontos': dados_p1['pontos']})
+        
+        if equipe.piloto2:
+            dados_p2 = pilotos_pontos.get(equipe.piloto2.nome, {'pontos': 0, 'vitorias': 0})
+            pontos_equipe += dados_p2['pontos']
+            vitorias_equipe += dados_p2['vitorias']
+            pilotos_equipe.append({'nome': equipe.piloto2.nome, 'pontos': dados_p2['pontos']})
+        
+        classificacao_equipes.append({
+            'nome': equipe.nome,
+            'pontos': pontos_equipe,
+            'vitorias': vitorias_equipe,
+            'pilotos': pilotos_equipe
+        })
+    
+    classificacao_equipes.sort(key=lambda x: (-x['pontos'], -x['vitorias']))
+    
+    # Verifica se a temporada está encerrada
+    total_corridas_calendario = len([gp for gp in gps_2025 if not gp[0].startswith('sprint')])
+    total_corridas_realizadas = len([r for r in respostas if not r.gp_slug.startswith('sprint')])
+    temporada_encerrada = total_corridas_realizadas >= total_corridas_calendario and total_corridas_calendario > 0
+    
+    return render_template('classificacao_construtores_atual.html',
+                         temporada_ano=TEMPORADA_ATIVA,
+                         classificacao=classificacao_equipes,
+                         total_corridas=total_corridas_realizadas,
+                         temporada_encerrada=temporada_encerrada)
 
 # Rota da área administrativa
 @app.route('/admin')
@@ -871,6 +1156,102 @@ def admin_gerenciar_pilotos():
     
     return render_template('admin_gerenciar_pilotos.html', pilotos=pilotos)
 
+@app.route('/admin/gerenciar-equipes', methods=['GET', 'POST'])
+@admin_required
+def admin_gerenciar_equipes():
+    if request.method == 'POST':
+        action = request.form.get('action')
+        
+        if action == 'adicionar':
+            nome_equipe = request.form.get('nome_equipe', '').strip()
+            piloto1_id = request.form.get('piloto1_id')
+            piloto2_id = request.form.get('piloto2_id')
+            
+            if nome_equipe:
+                # Verifica se a equipe já existe
+                equipe_existente = Equipe.query.filter_by(nome=nome_equipe).first()
+                if equipe_existente:
+                    flash('Esta equipe já está cadastrada!', 'error')
+                else:
+                    try:
+                        nova_equipe = Equipe(
+                            nome=nome_equipe,
+                            piloto1_id=int(piloto1_id) if piloto1_id else None,
+                            piloto2_id=int(piloto2_id) if piloto2_id else None
+                        )
+                        db.session.add(nova_equipe)
+                        db.session.commit()
+                        flash('Equipe adicionada com sucesso!', 'success')
+                    except Exception as e:
+                        db.session.rollback()
+                        flash(f'Erro ao adicionar equipe: {str(e)}', 'error')
+            else:
+                flash('Nome da equipe é obrigatório!', 'error')
+        
+        elif action == 'editar':
+            equipe_id = request.form.get('equipe_id')
+            piloto1_id = request.form.get('piloto1_id')
+            piloto2_id = request.form.get('piloto2_id')
+            
+            try:
+                equipe = Equipe.query.get(equipe_id)
+                if equipe:
+                    equipe.piloto1_id = int(piloto1_id) if piloto1_id else None
+                    equipe.piloto2_id = int(piloto2_id) if piloto2_id else None
+                    db.session.commit()
+                    flash('Pilotos da equipe atualizados com sucesso!', 'success')
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Erro ao atualizar equipe: {str(e)}', 'error')
+        
+        elif action == 'excluir':
+            equipe_id = request.form.get('equipe_id')
+            try:
+                equipe = Equipe.query.get(equipe_id)
+                if equipe:
+                    db.session.delete(equipe)
+                    db.session.commit()
+                    flash('Equipe excluída com sucesso!', 'success')
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Erro ao excluir equipe: {str(e)}', 'error')
+    
+    # Busca todas as equipes e pilotos
+    equipes = Equipe.query.order_by(Equipe.nome).all()
+    pilotos = Piloto.query.order_by(Piloto.nome).all()
+    
+    # Verificar se já existe snapshot da temporada atual
+    snapshot_atual = EquipeTemporada.query.filter_by(temporada_ano=TEMPORADA_ATIVA).first()
+    
+    return render_template('admin_gerenciar_equipes.html', 
+                          equipes=equipes, 
+                          pilotos=pilotos,
+                          temporada_atual=TEMPORADA_ATIVA,
+                          snapshot_existe=snapshot_atual is not None)
+
+@app.route('/admin/salvar-snapshot-temporada', methods=['POST'])
+@admin_required
+def salvar_snapshot_temporada():
+    """Salva um snapshot das equipes para a temporada atual (proteção do histórico)"""
+    ano = request.form.get('ano', TEMPORADA_ATIVA)
+    try:
+        ano = int(ano)
+    except:
+        ano = TEMPORADA_ATIVA
+    
+    # Verificar se já existe
+    snapshot_existente = EquipeTemporada.query.filter_by(temporada_ano=ano).first()
+    if snapshot_existente:
+        flash(f'Snapshot da temporada {ano} já existe! Para atualizar, exclua o anterior primeiro.', 'warning')
+        return redirect(url_for('admin_gerenciar_equipes'))
+    
+    if salvar_snapshot_equipes(ano):
+        flash(f'Snapshot das equipes salvo com sucesso para a temporada {ano}!', 'success')
+    else:
+        flash('Erro ao salvar snapshot das equipes.', 'error')
+    
+    return redirect(url_for('admin_gerenciar_equipes'))
+
 @app.route('/admin/gerenciar-usuarios', methods=['GET', 'POST'])
 @admin_required
 def admin_gerenciar_usuarios():
@@ -1016,16 +1397,24 @@ def alterar_senha():
 
 # Rota para Resultados Parciais por Corrida
 @app.route('/resultados-parciais')
-def resultados_parciais():
+@app.route('/resultados-parciais/<int:ano>')
+def resultados_parciais(ano=None):
     if 'username' not in session:
         return redirect(url_for('login'))
+    
+    # Se veio com ano na URL, significa que veio do histórico
+    from_historico = ano is not None
+    
+    # Se não foi passado ano, usa o ano atual (temporada ativa)
+    if ano is None:
+        ano = TEMPORADA_ATIVA
     
     # Busca todos os usuários (exceto admin)
     usuarios = Usuario.query.filter(Usuario.username != 'admin').all()
     
-    # Busca todos os palpites e respostas
-    palpites = Palpite.query.all()
-    respostas = {r.gp_slug: r for r in Resposta.query.all()}
+    # Busca todos os palpites e respostas da temporada específica
+    palpites = Palpite.query.filter_by(temporada_ano=ano).all()
+    respostas = {r.gp_slug: r for r in Resposta.query.filter_by(temporada_ano=ano).all()}
     pontuacao = {p.posicao: p.pontos for p in Pontuacao.query.all()}
     pontuacao_sprint = {p.posicao: p.pontos for p in PontuacaoSprint.query.all()}
     
@@ -1076,7 +1465,9 @@ def resultados_parciais():
     
     return render_template('resultados_parciais.html', 
                          classificacao=classificacao, 
-                         gps=gps_2025)
+                         gps=gps_2025,
+                         ano=ano,
+                         from_historico=from_historico)
 
 # Rota para Configurações do Sistema
 @app.route('/admin/configuracoes', methods=['GET', 'POST'])
@@ -1334,25 +1725,26 @@ def admin_datas_gps():
     return render_template('admin_datas_gps.html', gps=gps_com_datas)
 
 def criar_admin():
-    # Verifica se o admin já existe
-    admin = Usuario.query.filter_by(username='admin').first()
-    
-    if not admin:
-        # Cria o usuário admin com senha 'admin8163'
-        admin = Usuario(
-            username='admin',
-            first_name='Administrador',
-            is_admin=True,
-            primeiro_login=True
-        )
-        admin.set_password('admin8163')
-        db.session.add(admin)
-        db.session.commit()
-        print("Usuário admin criado com sucesso!")
-        print("Login: admin")
-        print("Senha: admin8163")
-    else:
-        print("Usuário admin já existe!")
+    with app.app_context():
+        # Verifica se o admin já existe
+        admin = Usuario.query.filter_by(username='admin').first()
+        
+        if not admin:
+            # Cria o usuário admin com senha 'admin8163'
+            admin = Usuario(
+                username='admin',
+                first_name='Administrador',
+                is_admin=True,
+                primeiro_login=True
+            )
+            admin.set_password('admin8163')
+            db.session.add(admin)
+            db.session.commit()
+            print("Usuário admin criado com sucesso!")
+            print("Login: admin")
+            print("Senha: admin8163")
+        else:
+            print("Usuário admin já existe!")
 
 # Rota para exibir resultados de um GP
 @app.route('/resultados/<nome_gp>')
@@ -2232,6 +2624,329 @@ def gerar_extrato_pdf(gp_slug):
     except Exception as e:
         print(f"Erro ao processar requisição: {str(e)}")
         return jsonify({'error': f'Erro ao processar requisição: {str(e)}'}), 500
+
+def calcular_classificacao_temporada(ano):
+    """Função auxiliar para calcular a classificação de uma temporada"""
+    # Buscar todos os usuários (exceto admin)
+    usuarios = Usuario.query.filter(Usuario.username != 'admin').all()
+    
+    # Buscar todos os palpites e respostas dessa temporada
+    palpites = Palpite.query.filter_by(temporada_ano=ano).all()
+    respostas = {r.gp_slug: r for r in Resposta.query.filter_by(temporada_ano=ano).all()}
+    pontuacao = {p.posicao: p.pontos for p in Pontuacao.query.all()}
+    pontuacao_sprint = {p.posicao: p.pontos for p in PontuacaoSprint.query.all()}
+    
+    # Calcular classificação
+    classificacao = []
+    for usuario in usuarios:
+        palpites_usuario = [p for p in palpites if p.usuario_id == usuario.id]
+        total_pontos = 0
+        
+        for palpite in palpites_usuario:
+            resposta = respostas.get(palpite.gp_slug)
+            if resposta:
+                # Verifica pole position
+                if palpite.pole == resposta.pole and resposta.pole is not None:
+                    if palpite.gp_slug.startswith('sprint'):
+                        total_pontos += pontuacao_sprint.get(0, 1)
+                    else:
+                        total_pontos += pontuacao.get(0, 5)
+                
+                # Verifica posições
+                for i in range(1, 11):
+                    palpite_pos = getattr(palpite, f'pos_{i}')
+                    resposta_pos = getattr(resposta, f'pos_{i}')
+                    if palpite_pos == resposta_pos and resposta_pos is not None:
+                        if palpite.gp_slug.startswith('sprint'):
+                            total_pontos += pontuacao_sprint.get(i, 0)
+                        else:
+                            total_pontos += pontuacao.get(i, 0)
+        
+        classificacao.append({
+            'usuario': usuario,
+            'total_pontos': total_pontos
+        })
+    
+    # Ordenar por total de pontos (maior primeiro)
+    classificacao.sort(key=lambda x: x['total_pontos'], reverse=True)
+    return classificacao
+
+@app.route('/historico-temporadas')
+def historico_temporadas():
+    """Tela para visualizar o histórico de todas as temporadas"""
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    # Buscar todas as temporadas ordenadas por ano (mais recente primeiro)
+    temporadas = Temporada.query.order_by(Temporada.ano.desc()).all()
+    
+    # Para cada temporada, buscar os campeões (pódio)
+    temporadas_info = []
+    for temp in temporadas:
+        # Primeiro tenta buscar campeões registrados oficialmente
+        campeoes = CampeaoTemporada.query.filter_by(temporada_id=temp.id).order_by(CampeaoTemporada.posicao).all()
+        
+        # Se não tem campeões registrados, calcula a partir da classificação
+        if not campeoes:
+            classificacao = calcular_classificacao_temporada(temp.ano)
+            # Pega os top 3 (ou menos se não tiver usuários suficientes)
+            top3 = classificacao[:3] if len(classificacao) >= 3 else classificacao
+            
+            # Cria objetos simulando campeões para o template
+            campeoes_calculados = []
+            for i, item in enumerate(top3):
+                if item['total_pontos'] > 0:  # Só mostra se tiver pontos
+                    campeao_obj = type('CampeaoCalculado', (), {
+                        'posicao': i + 1,
+                        'usuario': item['usuario'],
+                        'pontos_total': item['total_pontos']
+                    })()
+                    campeoes_calculados.append(campeao_obj)
+            campeoes = campeoes_calculados
+        
+        temporadas_info.append({
+            'temporada': temp,
+            'campeoes': campeoes
+        })
+    
+    return render_template('historico_temporadas.html', 
+                         temporadas=temporadas_info,
+                         is_admin=session.get('is_admin', False))
+
+@app.route('/temporada/<int:ano>')
+def ver_temporada(ano):
+    """Visualizar detalhes de uma temporada específica"""
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    # Buscar a temporada
+    temporada = Temporada.query.filter_by(ano=ano).first()
+    if not temporada:
+        flash('Temporada não encontrada!', 'error')
+        return redirect(url_for('historico_temporadas'))
+    
+    # Calcular classificação usando função auxiliar
+    classificacao = calcular_classificacao_temporada(ano)
+    
+    # Buscar campeões registrados
+    campeoes = CampeaoTemporada.query.filter_by(temporada_id=temporada.id).order_by(CampeaoTemporada.posicao).all()
+    
+    # Se não tem campeões registrados, calcula a partir da classificação
+    if not campeoes:
+        top3 = classificacao[:3] if len(classificacao) >= 3 else classificacao
+        campeoes_calculados = []
+        for i, item in enumerate(top3):
+            if item['total_pontos'] > 0:  # Só mostra se tiver pontos
+                campeao_obj = type('CampeaoCalculado', (), {
+                    'posicao': i + 1,
+                    'usuario': item['usuario'],
+                    'pontos_total': item['total_pontos']
+                })()
+                campeoes_calculados.append(campeao_obj)
+        campeoes = campeoes_calculados
+    
+    return render_template('ver_temporada.html',
+                         temporada=temporada,
+                         classificacao=classificacao,
+                         campeoes=campeoes,
+                         is_admin=session.get('is_admin', False))
+
+@app.route('/classificacao-pilotos/<int:ano>')
+def classificacao_pilotos(ano):
+    """Classificação dos pilotos de F1 baseada nos resultados oficiais"""
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    # Buscar a temporada
+    temporada = Temporada.query.filter_by(ano=ano).first()
+    if not temporada:
+        flash('Temporada não encontrada!', 'error')
+        return redirect(url_for('historico_temporadas'))
+    
+    # Sistema de pontuação da F1
+    pontos_f1 = {
+        1: 25, 2: 18, 3: 15, 4: 12, 5: 10,
+        6: 8, 7: 6, 8: 4, 9: 2, 10: 1
+    }
+    
+    # Buscar todas as respostas (resultados oficiais) da temporada
+    respostas = Resposta.query.filter_by(temporada_ano=ano).all()
+    
+    # Dicionário para acumular pontos dos pilotos
+    pilotos_pontos = {}
+    
+    for resposta in respostas:
+        # Ignorar sprints para classificação oficial (ou incluir com pontuação diferente)
+        is_sprint = resposta.gp_slug.startswith('sprint')
+        
+        # Pontuação de sprint é diferente na F1
+        if is_sprint:
+            pontos_sprint = {1: 8, 2: 7, 3: 6, 4: 5, 5: 4, 6: 3, 7: 2, 8: 1}
+            pontos_usar = pontos_sprint
+        else:
+            pontos_usar = pontos_f1
+        
+        # Percorrer as 10 posições
+        for pos in range(1, 11):
+            piloto_codigo = getattr(resposta, f'pos_{pos}', None)
+            if piloto_codigo:
+                if piloto_codigo not in pilotos_pontos:
+                    pilotos_pontos[piloto_codigo] = {'pontos': 0, 'vitorias': 0, 'podios': 0}
+                
+                pontos = pontos_usar.get(pos, 0)
+                pilotos_pontos[piloto_codigo]['pontos'] += pontos
+                
+                if pos == 1 and not is_sprint:
+                    pilotos_pontos[piloto_codigo]['vitorias'] += 1
+                if pos <= 3 and not is_sprint:
+                    pilotos_pontos[piloto_codigo]['podios'] += 1
+    
+    # Buscar informações dos pilotos (nome é usado como identificador)
+    pilotos_info = {p.nome: p for p in Piloto.query.all()}
+    
+    # Criar lista de classificação
+    classificacao = []
+    for nome_piloto, dados in pilotos_pontos.items():
+        piloto = pilotos_info.get(nome_piloto)
+        classificacao.append({
+            'codigo': nome_piloto,  # O código é o próprio nome/sigla
+            'nome': piloto.nome if piloto else nome_piloto,
+            'equipe': '-',  # Modelo não tem equipe, pode ser adicionado futuramente
+            'pontos': dados['pontos'],
+            'vitorias': dados['vitorias'],
+            'podios': dados['podios']
+        })
+    
+    # Ordenar por pontos (decrescente), depois vitórias, depois pódios
+    classificacao.sort(key=lambda x: (-x['pontos'], -x['vitorias'], -x['podios']))
+    
+    return render_template('classificacao_pilotos.html',
+                         temporada=temporada,
+                         classificacao=classificacao,
+                         total_corridas=len([r for r in respostas if not r.gp_slug.startswith('sprint')]))
+
+@app.route('/classificacao-construtores/<int:ano>')
+def classificacao_construtores(ano):
+    """Campeonato de Construtores - soma pontos dos 2 pilotos por equipe"""
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    
+    # Buscar a temporada
+    temporada = Temporada.query.filter_by(ano=ano).first()
+    if not temporada:
+        flash('Temporada não encontrada!', 'error')
+        return redirect(url_for('historico_temporadas'))
+    
+    # Sistema de pontuação da F1
+    pontos_f1 = {
+        1: 25, 2: 18, 3: 15, 4: 12, 5: 10,
+        6: 8, 7: 6, 8: 4, 9: 2, 10: 1
+    }
+    
+    # Buscar todas as respostas (resultados oficiais) da temporada
+    respostas = Resposta.query.filter_by(temporada_ano=ano).all()
+    
+    # Dicionário para acumular pontos dos pilotos
+    pilotos_pontos = {}
+    
+    for resposta in respostas:
+        is_sprint = resposta.gp_slug.startswith('sprint')
+        
+        if is_sprint:
+            pontos_sprint = {1: 8, 2: 7, 3: 6, 4: 5, 5: 4, 6: 3, 7: 2, 8: 1}
+            pontos_usar = pontos_sprint
+        else:
+            pontos_usar = pontos_f1
+        
+        for pos in range(1, 11):
+            piloto_codigo = getattr(resposta, f'pos_{pos}', None)
+            if piloto_codigo:
+                if piloto_codigo not in pilotos_pontos:
+                    pilotos_pontos[piloto_codigo] = {'pontos': 0, 'vitorias': 0}
+                
+                pontos = pontos_usar.get(pos, 0)
+                pilotos_pontos[piloto_codigo]['pontos'] += pontos
+                
+                if pos == 1 and not is_sprint:
+                    pilotos_pontos[piloto_codigo]['vitorias'] += 1
+    
+    # Verificar se existe snapshot salvo da temporada
+    equipes_snapshot = EquipeTemporada.query.filter_by(temporada_ano=ano).all()
+    
+    classificacao = []
+    
+    if equipes_snapshot:
+        # Usar dados do snapshot (histórico protegido)
+        for equipe_snap in equipes_snapshot:
+            pontos_equipe = 0
+            vitorias_equipe = 0
+            pilotos_equipe = []
+            
+            if equipe_snap.piloto1_nome:
+                dados_p1 = pilotos_pontos.get(equipe_snap.piloto1_nome, {'pontos': 0, 'vitorias': 0})
+                pontos_equipe += dados_p1['pontos']
+                vitorias_equipe += dados_p1['vitorias']
+                pilotos_equipe.append({
+                    'nome': equipe_snap.piloto1_nome,
+                    'pontos': dados_p1['pontos']
+                })
+            
+            if equipe_snap.piloto2_nome:
+                dados_p2 = pilotos_pontos.get(equipe_snap.piloto2_nome, {'pontos': 0, 'vitorias': 0})
+                pontos_equipe += dados_p2['pontos']
+                vitorias_equipe += dados_p2['vitorias']
+                pilotos_equipe.append({
+                    'nome': equipe_snap.piloto2_nome,
+                    'pontos': dados_p2['pontos']
+                })
+            
+            classificacao.append({
+                'nome': equipe_snap.equipe_nome,
+                'pontos': pontos_equipe,
+                'vitorias': vitorias_equipe,
+                'pilotos': pilotos_equipe
+            })
+    else:
+        # Usar dados atuais (temporada atual ou sem snapshot)
+        equipes = Equipe.query.all()
+        
+        for equipe in equipes:
+            pontos_equipe = 0
+            vitorias_equipe = 0
+            pilotos_equipe = []
+            
+            if equipe.piloto1:
+                dados_p1 = pilotos_pontos.get(equipe.piloto1.nome, {'pontos': 0, 'vitorias': 0})
+                pontos_equipe += dados_p1['pontos']
+                vitorias_equipe += dados_p1['vitorias']
+                pilotos_equipe.append({
+                    'nome': equipe.piloto1.nome,
+                    'pontos': dados_p1['pontos']
+                })
+            
+            if equipe.piloto2:
+                dados_p2 = pilotos_pontos.get(equipe.piloto2.nome, {'pontos': 0, 'vitorias': 0})
+                pontos_equipe += dados_p2['pontos']
+                vitorias_equipe += dados_p2['vitorias']
+                pilotos_equipe.append({
+                    'nome': equipe.piloto2.nome,
+                    'pontos': dados_p2['pontos']
+                })
+            
+            classificacao.append({
+                'nome': equipe.nome,
+                'pontos': pontos_equipe,
+                'vitorias': vitorias_equipe,
+                'pilotos': pilotos_equipe
+            })
+    
+    # Ordenar por pontos (decrescente), depois vitórias
+    classificacao.sort(key=lambda x: (-x['pontos'], -x['vitorias']))
+    
+    return render_template('classificacao_construtores.html',
+                         temporada=temporada,
+                         classificacao=classificacao,
+                         total_corridas=len([r for r in respostas if not r.gp_slug.startswith('sprint')]))
 
 @app.route('/dados-pessoais')
 def dados_pessoais():

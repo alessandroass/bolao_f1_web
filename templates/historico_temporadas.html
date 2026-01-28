@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+
+{% block title %}Histórico de Temporadas - Bolão F1{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="header">
+        <a href="{{ url_for('tela_gps') }}" class="back-button">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+        </a>
+        <h1 class="title">HISTÓRICO DE TEMPORADAS</h1>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="temporadas-grid">
+        {% for item in temporadas %}
+        <div class="temporada-card {% if item.temporada.ativa %}ativa{% elif item.temporada.arquivada %}arquivada{% endif %}">
+            <div class="temporada-header">
+                <h2>🏆 Temporada {{ item.temporada.ano }}</h2>
+                {% if item.temporada.ativa %}
+                    <span class="badge ativa">EM ANDAMENTO</span>
+                {% elif item.temporada.arquivada %}
+                    <span class="badge arquivada">ENCERRADA</span>
+                {% endif %}
+            </div>
+            
+            {% if item.campeoes %}
+            <div class="podio-mini">
+                <h3>Pódio Final</h3>
+                <div class="podio-lista">
+                    {% for campeao in item.campeoes %}
+                    <div class="podio-item posicao-{{ campeao.posicao }}">
+                        <span class="posicao">{{ campeao.posicao }}º</span>
+                        <span class="nome">{{ campeao.usuario.username }}</span>
+                        <span class="pontos">{{ campeao.pontos_total }} pts</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% else %}
+            <div class="sem-campeoes">
+                {% if item.temporada.ativa %}
+                    <p>Temporada em andamento...</p>
+                {% else %}
+                    <p>Campeões não registrados</p>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            <div class="temporada-actions">
+                <a href="{{ url_for('ver_temporada', ano=item.temporada.ano) }}" class="btn-ver">
+                    Ver Detalhes
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+        
+        {% if not temporadas %}
+        <div class="sem-temporadas">
+            <p>Nenhuma temporada encontrada.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 30px;
+        position: relative;
+    }
+
+    .back-button {
+        position: absolute;
+        left: 0;
+        padding: 8px;
+        background: rgba(26, 26, 26, 0.8);
+        border-radius: 50%;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+
+    .back-button:hover {
+        background: rgba(26, 26, 26, 1);
+        transform: translateY(-2px);
+    }
+
+    .back-button svg {
+        width: 24px;
+        height: 24px;
+        color: #e10600;
+    }
+
+    .title {
+        width: 100%;
+        text-align: center;
+        font-size: 2em;
+        color: #e10600;
+        font-family: 'Orbitron', sans-serif;
+    }
+
+    .temporadas-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 20px;
+    }
+
+    .temporada-card {
+        background: rgba(26, 26, 26, 0.9);
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 0 20px rgba(225, 6, 0, 0.2);
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .temporada-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0 30px rgba(225, 6, 0, 0.4);
+    }
+
+    .temporada-card.ativa {
+        border: 2px solid #2ecc71;
+        box-shadow: 0 0 20px rgba(46, 204, 113, 0.3);
+    }
+
+    .temporada-card.arquivada {
+        border: 1px solid #666;
+    }
+
+    .temporada-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .temporada-header h2 {
+        color: #fff;
+        font-family: 'Orbitron', sans-serif;
+        font-size: 1.5em;
+        margin: 0;
+    }
+
+    .badge {
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-size: 0.8em;
+        font-family: 'Orbitron', sans-serif;
+        font-weight: bold;
+    }
+
+    .badge.ativa {
+        background: #2ecc71;
+        color: #fff;
+    }
+
+    .badge.arquivada {
+        background: #666;
+        color: #fff;
+    }
+
+    .podio-mini {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+
+    .podio-mini h3 {
+        color: #e10600;
+        font-family: 'Orbitron', sans-serif;
+        font-size: 1em;
+        margin: 0 0 15px 0;
+        text-align: center;
+    }
+
+    .podio-lista {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .podio-item {
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.05);
+    }
+
+    .podio-item.posicao-1 {
+        background: linear-gradient(90deg, rgba(255, 215, 0, 0.3), transparent);
+        border-left: 4px solid #FFD700;
+    }
+
+    .podio-item.posicao-2 {
+        background: linear-gradient(90deg, rgba(192, 192, 192, 0.3), transparent);
+        border-left: 4px solid #C0C0C0;
+    }
+
+    .podio-item.posicao-3 {
+        background: linear-gradient(90deg, rgba(205, 127, 50, 0.3), transparent);
+        border-left: 4px solid #CD7F32;
+    }
+
+    .podio-item .posicao {
+        font-family: 'Orbitron', sans-serif;
+        font-weight: bold;
+        font-size: 1.2em;
+        width: 40px;
+        color: #e10600;
+    }
+
+    .podio-item .nome {
+        flex: 1;
+        color: #fff;
+        font-family: 'Orbitron', sans-serif;
+    }
+
+    .podio-item .pontos {
+        color: #2ecc71;
+        font-family: 'Orbitron', sans-serif;
+        font-weight: bold;
+    }
+
+    .sem-campeoes {
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 10px;
+        padding: 30px;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .sem-campeoes p {
+        color: #888;
+        font-family: 'Orbitron', sans-serif;
+        margin: 0;
+    }
+
+    .temporada-actions {
+        display: flex;
+        justify-content: center;
+    }
+
+    .btn-ver {
+        display: inline-block;
+        padding: 12px 30px;
+        background: #e10600;
+        color: #fff;
+        text-decoration: none;
+        border-radius: 25px;
+        font-family: 'Orbitron', sans-serif;
+        transition: all 0.3s;
+    }
+
+    .btn-ver:hover {
+        background: #b80000;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(225, 6, 0, 0.4);
+    }
+
+    .sem-temporadas {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 50px;
+        background: rgba(26, 26, 26, 0.8);
+        border-radius: 15px;
+    }
+
+    .sem-temporadas p {
+        color: #888;
+        font-family: 'Orbitron', sans-serif;
+        font-size: 1.2em;
+    }
+
+    .alert {
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 5px;
+        font-family: 'Orbitron', sans-serif;
+    }
+
+    .alert-success {
+        background-color: rgba(40, 167, 69, 0.2);
+        border: 1px solid #28a745;
+        color: #28a745;
+    }
+
+    .alert-error {
+        background-color: rgba(220, 53, 69, 0.2);
+        border: 1px solid #dc3545;
+        color: #dc3545;
+    }
+
+    @media (max-width: 768px) {
+        .container {
+            padding: 15px;
+        }
+
+        .title {
+            font-size: 1.4em;
+        }
+
+        .temporadas-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .temporada-card {
+            padding: 20px;
+        }
+
+        .temporada-header h2 {
+            font-size: 1.2em;
+        }
+    }
+</style>
+{% endblock %}
