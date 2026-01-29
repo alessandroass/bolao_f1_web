@@ -54,7 +54,15 @@
         <div class="gp-datas">
           <p>{{ evento.data_corrida.strftime('%d/%m/%Y') }}</p>
         </div>
-        {% if evento.tem_sprint %}
+        {% if evento.tipo == 'sprint' %}
+        <a href="{{ url_for('tela_palpite_sprint', nome_gp=evento.slug) }}">
+          {% if evento.tem_palpite_sprint %}
+            Visualizar Palpite
+          {% else %}
+            Fazer Palpite
+          {% endif %}
+        </a>
+        {% elif evento.tem_sprint %}
         <div class="race-buttons">
           <a href="{{ url_for('tela_palpite_gp', nome_gp=evento.slug) }}" class="race-button principal">
             {% if evento.tem_palpite %}
@@ -65,9 +73,9 @@
           </a>
           <a href="{{ url_for('tela_palpite_sprint', nome_gp=evento.slug) }}" class="race-button sprint">
             {% if evento.tem_palpite_sprint %}
-              Visualizar Palpite Sprint
+              Visualizar Palpite
             {% else %}
-              Fazer Palpite Sprint
+              Fazer Palpite
             {% endif %}
           </a>
         </div>

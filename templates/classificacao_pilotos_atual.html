@@ -73,7 +73,10 @@
 
     <!-- Tabela completa -->
     <div class="classificacao-section">
-        <h2>📊 Classificação Completa</h2>
+        <div class="section-header">
+            <h2>📊 Classificação Completa</h2>
+            <a href="{{ url_for('pontuacao_pilotos_detalhada_atual') }}" class="btn-detalhes">Por Corrida</a>
+        </div>
         <div class="table-responsive">
             <table class="tabela-classificacao">
                 <thead>
@@ -324,6 +327,37 @@
         background: rgba(26, 26, 26, 0.9);
         border-radius: 15px;
         padding: 25px 20px;
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .section-header h2 {
+        margin: 0;
+        color: #e10600;
+        font-family: 'Orbitron', sans-serif;
+        font-size: 1.3em;
+    }
+
+    .btn-detalhes {
+        padding: 8px 15px;
+        background: linear-gradient(135deg, #1e3d8f, #152b6a);
+        color: #fff;
+        text-decoration: none;
+        border-radius: 8px;
+        font-family: 'Orbitron', sans-serif;
+        font-size: 0.75em;
+        transition: all 0.3s ease;
+    }
+
+    .btn-detalhes:hover {
+        transform: translateY(-2px);
+        background: linear-gradient(135deg, #2a4fa8, #1e3d8f);
+        box-shadow: 0 4px 10px rgba(30, 61, 143, 0.5);
     }
 
     .classificacao-section h2 {

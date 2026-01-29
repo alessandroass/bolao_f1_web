@@ -19,9 +19,7 @@
             <span>Pontuação Geral: {{ total_geral }}</span>
         </div>
         
-        {% for gp in gps_2025 %}
-            {% set gp_resultado = resultados|selectattr('gp', 'equalto', gp[1])|first %}
-            {% if gp_resultado %}
+        {% for gp_resultado in resultados %}
             <div class="resultado-gp">
                 <div class="gp-header">
                     <h2>{{ gp_resultado.gp }}</h2>
@@ -47,8 +45,8 @@
                                 <td>{{ gp_resultado.palpite.pole or 'N/D' }}</td>
                                 <td>{{ gp_resultado.palpite.resposta.pole if gp_resultado.palpite.resposta else 'S/R' }}</td>
                                 <td>
-                                    {% if gp_resultado.palpite.pole == gp_resultado.palpite.resposta.pole and gp_resultado.palpite.resposta.pole is not none %}
-                                        {% if gp[0].startswith('sprint') %}
+                                    {% if gp_resultado.palpite.resposta and gp_resultado.palpite.pole == gp_resultado.palpite.resposta.pole and gp_resultado.palpite.resposta.pole is not none %}
+                                        {% if gp_resultado.is_sprint or gp_resultado.palpite.gp_slug.startswith('sprint') %}
                                             {{ pontuacao_sprint.get(0, 1) }}
                                         {% else %}
                                             {{ pontuacao.get(0, 5) }}
@@ -66,8 +64,8 @@
                                     <td>{{ gp_resultado.palpite['pos_' ~ i] or 'N/D' }}</td>
                                     <td>{{ gp_resultado.palpite.resposta['pos_' ~ i] if gp_resultado.palpite.resposta else 'S/R' }}</td>
                                     <td>
-                                        {% if gp_resultado.palpite['pos_' ~ i] == gp_resultado.palpite.resposta['pos_' ~ i] and gp_resultado.palpite.resposta['pos_' ~ i] is not none %}
-                                            {% if gp[0].startswith('sprint') %}
+                                        {% if gp_resultado.palpite.resposta and gp_resultado.palpite['pos_' ~ i] == gp_resultado.palpite.resposta['pos_' ~ i] and gp_resultado.palpite.resposta['pos_' ~ i] is not none %}
+                                            {% if gp_resultado.is_sprint or gp_resultado.palpite.gp_slug.startswith('sprint') %}
                                                 {{ pontuacao_sprint.get(i, 0) }}
                                             {% else %}
                                                 {{ pontuacao.get(i, 0) }}
@@ -88,7 +86,6 @@
                     </table>
                 </div>
             </div>
-            {% endif %}
         {% endfor %}
     {% else %}
         <div class="sem-resultados">

@@ -1,23 +1,23 @@
 {% extends "base.html" %}
 
-{% block title %}Pontuação Detalhada {{ temporada.ano }} - Bolão F1{% endblock %}
+{% block title %}Pontuação Detalhada {{ temporada_ano }} - Bolão F1{% endblock %}
 
 {% block content %}
 <div class="container">
     <div class="header">
-        <a href="{{ url_for('classificacao_pilotos', ano=temporada.ano) }}" class="back-button">
+        <a href="{{ url_for('classificacao_pilotos_atual') }}" class="back-button">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M19 12H5M12 19l-7-7 7-7"/>
             </svg>
         </a>
-        <h1 class="title">📊 PONTUAÇÃO DETALHADA - {{ temporada.ano }}</h1>
+        <h1 class="title">📊 PONTUAÇÃO DETALHADA - {{ temporada_ano }}</h1>
     </div>
 
     <div class="info-box">
         <span>Pontuação corrida a corrida de cada piloto</span>
     </div>
 
-    {% if pilotos %}
+    {% if corridas %}
     <div class="tabela-container">
         <table class="tabela-detalhada">
             <thead>
@@ -227,8 +227,16 @@
         background: rgba(220, 53, 69, 0.2) !important;
     }
 
+    .zero {
+        color: #666;
+    }
+
     .zero-sem-cor {
         color: #888;
+    }
+
+    .dns {
+        color: #444;
     }
 
     /* Linhas do pódio */

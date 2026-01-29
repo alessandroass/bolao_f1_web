@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Palpite Sprint F1 - {{ nome_gp_exibicao }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style_tela_palpite.css') }}">
+    <style>
+        /* Estilos para mobile (até 768px) */
+        @media (max-width: 768px) {
+            .container {
+                width: 100%;
+                max-width: 412px;
+                margin: 0 auto;
+                padding: 5px;
+                box-sizing: border-box;
+            }
+            
+            .titulo {
+                font-size: 17.5px;
+                margin-bottom: 15px;
+                color: #ffffff;
+            }
+            
+            .pole-position {
+                width: 100%;
+                max-width: 350px;
+                margin: 8px auto;
+                padding: 12px;
+                border: 2px solid #e10600;
+                border-radius: 10px;
+                box-shadow: 0 0 5px #e10600, 0 0 10px rgba(225, 6, 0, 0.3);
+                background-color: rgba(0, 0, 0, 0.5);
+            }
+            
+            .podio-container {
+                width: 100%;
+                max-width: 350px;
+                margin: 8px auto;
+                padding: 12px;
+                border: 2px solid #e10600;
+                border-radius: 10px;
+                box-shadow: 0 0 5px #e10600, 0 0 10px rgba(225, 6, 0, 0.3);
+                background-color: rgba(0, 0, 0, 0.5);
+            }
+            
+            .posicoes-container {
+                width: 100%;
+                max-width: 350px;
+                margin: 8px auto;
+                padding: 12px;
+                border: 2px solid #e10600;
+                border-radius: 10px;
+                box-shadow: 0 0 5px #e10600, 0 0 10px rgba(225, 6, 0, 0.3);
+                background-color: rgba(0, 0, 0, 0.5);
+            }
+            
+            .podio {
+                flex-direction: column;
+                gap: 15px;
+                margin-bottom: 0;
+            }
+            
+            .primeiro, .segundo, .terceiro {
+                position: relative;
+                width: 100%;
+                max-width: 320px;
+                margin: 0 auto;
+            }
+            
+            .grid-posicoes {
+                gap: 15px;
+                margin-bottom: 0;
+            }
+            
+            .linha-posicao {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .botoes {
+                flex-direction: column;
+                gap: 12px;
+                width: 100%;
+                max-width: 350px;
+                margin: 20px auto;
+                align-items: center;
+            }
+            
+            .salvar-btn, .voltar-btn {
+                width: auto;
+                min-width: 120px;
+                height: 45px;
+                font-size: 16px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 0 20px;
+            }
+            
+            .popup {
+                width: 95%;
+                max-width: 350px;
+                left: 50%;
+                transform: translateX(-50%);
+            }
+
+            .pole-position select {
+                height: 45px;
+                font-size: 15px;
+                padding: 10px;
+                color: #ffffff;
+                background-color: #4a148c;
+            }
+
+            .posicao select {
+                height: 45px;
+                font-size: 15px;
+                padding: 10px;
+                color: #ffffff;
+                background-color: rgba(0, 0, 0, 0.7);
+            }
+
+            .posicao label {
+                font-size: 15px;
+                margin-bottom: 4px;
+                color: #ffffff;
+            }
+
+            .titulo-secao {
+                font-size: 16px;
+                margin-bottom: 12px;
+                color: #ffffff;
+                text-align: center;
+                display: block !important;
+                font-weight: bold;
+                text-shadow: 0 0 5px #e10600;
+            }
+
+            .status-mensagem {
+                color: #16df04;
+            }
+
+            .status-mensagem.pole-habilitada {
+                color: #16df04;
+                text-shadow: 0 0 5px rgba(22, 223, 4, 0.5);
+            }
+
+            .status-mensagem.posicoes-habilitadas {
+                color: #ffd700;
+                text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+            }
+
+            .status-mensagem.votacao-encerrada {
+                color: #e10600;
+                text-shadow: 0 0 5px rgba(225, 6, 0, 0.5);
+            }
+        }
+
+        /* Ajustes para telas muito pequenas (até 360px) */
+        @media (max-width: 360px) {
+            .container {
+                padding: 3px;
+            }
+            
+            .titulo {
+                font-size: 18px;
+            }
+            
+            .pole-position, .podio-container, .posicoes-container {
+                padding: 8px;
+                max-width: 320px;
+            }
+            
+            .pole-position select, .posicao select {
+                height: 40px;
+                font-size: 14px;
+                padding: 8px;
+            }
+            
+            .posicao label {
+                font-size: 14px;
+            }
+            
+            .salvar-btn, .voltar-btn {
+                height: 40px;
+                font-size: 15px;
+                min-width: 100px;
+                padding: 0 15px;
+            }
+
+            .titulo-secao {
+                font-size: 15px;
+                margin-bottom: 10px;
+            }
+        }
+        .badge-sprint {
+            font-size: 0.6em;
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: #fff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="titulo">🏁 {{ nome_gp_exibicao }} <span class="badge-sprint">Sprint</span></h1>
+            <div class="status-palpites">
+                {% if pole_habilitado %}
+                    <p class="status-mensagem pole-habilitada">Pole Position habilitada. Faça seu palpite até a hora da classificação!</p>
+                {% elif posicoes_habilitado %}
+                    <p class="status-mensagem posicoes-habilitadas">Pole Position desabilitada. Faça seu palpite das 10 posições até a hora da corrida Sprint!</p>
+                {% else %}
+                    <p class="status-mensagem votacao-encerrada">Votação encerrada para este Sprint!</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div id="popup" class="popup {% if mensagem %}show{% endif %}">
+            <div class="popup-content">
+                <span class="close-popup">&times;</span>
+                <p class="popup-message {{ tipo_mensagem }}">{{ mensagem }}</p>
+            </div>
+        </div>
+
+        <div id="error-popup" class="popup">
+            <div class="popup-content">
+                <span class="close-popup">&times;</span>
+                <p class="popup-message error">Você precisa preencher todas as 10 posições!</p>
+            </div>
+        </div>
+
+        <form method="POST" class="form-palpite">
+            <div class="secao-palpite">
+                <div class="pole-position">
+                    <h2 class="titulo-secao">Pole Position</h2>
+                    <div class="select-container">
+                        <select name="pole" {% if modo_visualizacao or (palpite and palpite.pole) or not pole_habilitado %}disabled{% endif %}>
+                            <option value="">-- Escolha --</option>
+                            {% for piloto in grid_2025 %}
+                            <option value="{{ piloto }}" {% if palpite and palpite.pole == piloto or request.form.get('pole') == piloto %}selected{% endif %}>{{ piloto }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="secao-palpite">
+                <div class="podio-container">
+                    <h2 class="titulo-secao">Pódio</h2>
+                    <div class="podio">
+                        <div class="posicao primeiro">
+                            <div class="select-container">
+                                <label>1º Colocado</label>
+                                <select name="pos_1" {% if modo_visualizacao or (palpite and palpite.pos_1) or not posicoes_habilitado %}disabled{% endif %}>
+                                    <option value="">-- Escolha --</option>
+                                    {% for piloto in grid_2025 %}
+                                    <option value="{{ piloto }}" {% if palpite and palpite.pos_1 == piloto or request.form.get('pos_1') == piloto %}selected{% endif %}>{{ piloto }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="posicao segundo">
+                            <div class="select-container">
+                                <label>2º Colocado</label>
+                                <select name="pos_2" {% if modo_visualizacao or (palpite and palpite.pos_2) or not posicoes_habilitado %}disabled{% endif %}>
+                                    <option value="">-- Escolha --</option>
+                                    {% for piloto in grid_2025 %}
+                                    <option value="{{ piloto }}" {% if palpite and palpite.pos_2 == piloto or request.form.get('pos_2') == piloto %}selected{% endif %}>{{ piloto }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="posicao terceiro">
+                            <div class="select-container">
+                                <label>3º Colocado</label>
+                                <select name="pos_3" {% if modo_visualizacao or (palpite and palpite.pos_3) or not posicoes_habilitado %}disabled{% endif %}>
+                                    <option value="">-- Escolha --</option>
+                                    {% for piloto in grid_2025 %}
+                                    <option value="{{ piloto }}" {% if palpite and palpite.pos_3 == piloto or request.form.get('pos_3') == piloto %}selected{% endif %}>{{ piloto }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="secao-palpite">
+                <div class="posicoes-container">
+                    <h2>Posições 4º a 10º</h2>
+                    <div class="grid-posicoes">
+                        {% for i in range(4, 11, 2) %}
+                        <div class="linha-posicao">
+                            <div class="posicao">
+                                <div class="select-container">
+                                    <label>{{ i }}º Colocado</label>
+                                    <select name="pos_{{ i }}" {% if modo_visualizacao or (palpite and palpite['pos_' ~ i]) or not posicoes_habilitado %}disabled{% endif %}>
+                                        <option value="">-- Escolha --</option>
+                                        {% for piloto in grid_2025 %}
+                                        <option value="{{ piloto }}" {% if palpite and palpite['pos_' ~ i] == piloto or request.form.get('pos_' + i|string) == piloto %}selected{% endif %}>{{ piloto }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            {% if i+1 <= 10 %}
+                            <div class="posicao">
+                                <div class="select-container">
+                                    <label>{{ i+1 }}º Colocado</label>
+                                    <select name="pos_{{ i+1 }}" {% if modo_visualizacao or (palpite and palpite['pos_' ~ (i+1)]) or not posicoes_habilitado %}disabled{% endif %}>
+                                        <option value="">-- Escolha --</option>
+                                        {% for piloto in grid_2025 %}
+                                        <option value="{{ piloto }}" {% if palpite and palpite['pos_' ~ (i+1)] == piloto or request.form.get('pos_' + (i+1)|string) == piloto %}selected{% endif %}>{{ piloto }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="botoes">
+                {% if not modo_visualizacao and not (palpite and palpite.pos_1) and (pole_habilitado or posicoes_habilitado) %}
+                <button type="submit" class="salvar-btn">Salvar Palpite Sprint</button>
+                {% endif %}
+                <a href="{{ url_for('tela_gps') }}" class="voltar-btn">Voltar</a>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const pilotos = {{ grid_2025|tojson|safe }};
+        const selects = document.querySelectorAll("select:not([name='pole'])");
+        const poleSelect = document.querySelector("select[name='pole']");
+        const form = document.querySelector("form");
+        const popup = document.getElementById("popup");
+        const errorPopup = document.getElementById("error-popup");
+        const closePopups = document.querySelectorAll(".close-popup");
+
+        function atualizarOpcoes() {
+            const selecionados = Array.from(selects).map(sel => sel.value).filter(v => v);
+            selects.forEach(sel => {
+                const valorAtual = sel.value;
+                sel.innerHTML = `<option value="">-- Escolha --</option>`;
+                pilotos.forEach(piloto => {
+                    if (!selecionados.includes(piloto) || piloto === valorAtual) {
+                        const opt = document.createElement("option");
+                        opt.value = piloto;
+                        opt.textContent = piloto;
+                        if (piloto === valorAtual) opt.selected = true;
+                        sel.appendChild(opt);
+                    }
+                });
+            });
+        }
+
+        function showErrorPopup() {
+            errorPopup.classList.add('show');
+            setTimeout(() => {
+                errorPopup.classList.remove('show');
+            }, 3000);
+        }
+
+        form.addEventListener('submit', function(e) {
+            const poleValue = poleSelect.value;
+            const hasPositions = Array.from(selects).some(sel => sel.value);
+            const allPositionsFilled = Array.from(selects).every(sel => sel.value);
+            
+            if (poleSelect.disabled) {
+                if (!allPositionsFilled) {
+                    e.preventDefault();
+                    showErrorPopup();
+                    return;
+                }
+                return;
+            }
+            
+            if (!poleValue && !hasPositions) {
+                e.preventDefault();
+                showErrorPopup();
+            }
+        });
+
+        if (popup.classList.contains('show')) {
+            setTimeout(() => {
+                popup.classList.remove('show');
+            }, 3000);
+        }
+
+        closePopups.forEach(closePopup => {
+            closePopup.addEventListener('click', () => {
+                popup.classList.remove('show');
+                errorPopup.classList.remove('show');
+            });
+        });
+
+        selects.forEach(sel => sel.addEventListener("change", atualizarOpcoes));
+        window.onload = atualizarOpcoes;
+    </script>
+</body>
+</html>

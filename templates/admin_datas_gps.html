@@ -7,11 +7,56 @@
     <div class="admin-header">
         <h1 class="title">Gerenciar Datas dos GPs</h1>
         <div class="header-buttons">
-            <form method="POST" style="display: inline;">
-                <input type="hidden" name="action" value="sincronizar">
-                <button type="submit" class="sync-button">Sincronizar GPs</button>
-            </form>
             <a href="{{ url_for('admin') }}" class="back-button">Voltar</a>
+        </div>
+    </div>
+    
+    <!-- Botão e formulário Criar novo GP -->
+    <div class="admin-section criar-gp-section">
+        <button type="button" class="btn-criar-gp" id="btn-mostrar-criar">+ Criar novo GP</button>
+        <div class="form-criar-gp" id="form-criar-gp" style="display: none;">
+            <h3>Novo GP</h3>
+            <form method="POST">
+                <input type="hidden" name="action" value="criar">
+                <div class="criar-gp-grid">
+                    <div class="form-group">
+                        <label for="nome_novo_gp">Nome do GP *</label>
+                        <input type="text" id="nome_novo_gp" name="nome_novo_gp" placeholder="Ex: GP do Brasil ou Sprint - Bahrein" required>
+                    </div>
+                    <div class="form-group form-group-checkbox">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="e_sprint" name="e_sprint" value="1">
+                            <span>É Sprint</span>
+                        </label>
+                        <p class="form-hint">Marque para corrida Sprint. O sistema usará a pontuação de sprint (tabela Pontuação Sprint) e exibirá o palpite na tela de Sprint.</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="slug_novo_gp">Slug (opcional, gerado do nome se vazio)</label>
+                        <input type="text" id="slug_novo_gp" name="slug_novo_gp" placeholder="Ex: brasil ou bahrain (Sprint)">
+                        <p class="form-hint form-hint-slug" id="hint-slug-sprint" style="display: none;">Para Sprint: use o mesmo slug do GP principal (ex: bahrain). Será salvo como <strong>sprint_bahrain</strong>.</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="data_corrida_novo">Data da Corrida</label>
+                        <input type="date" id="data_corrida_novo" name="data_corrida_novo" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="hora_corrida_novo">Hora da Corrida</label>
+                        <input type="time" id="hora_corrida_novo" name="hora_corrida_novo" value="10:00">
+                    </div>
+                    <div class="form-group">
+                        <label for="data_classificacao_novo">Data da Classificação</label>
+                        <input type="date" id="data_classificacao_novo" name="data_classificacao_novo" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="hora_classificacao_novo">Hora da Classificação</label>
+                        <input type="time" id="hora_classificacao_novo" name="hora_classificacao_novo" value="10:00">
+                    </div>
+                </div>
+                <div class="criar-gp-actions">
+                    <button type="submit" class="save-btn">Criar GP</button>
+                    <button type="button" class="btn-cancelar" id="btn-cancelar-criar">Cancelar</button>
+                </div>
+            </form>
         </div>
     </div>
     
@@ -19,8 +64,16 @@
         <div class="config-grid">
             {% for gp in gps %}
             <div class="config-card">
-                <h3>{{ gp.nome }}</h3>
+                <div class="card-header-row">
+                    <h3>{{ gp.nome }}{% if gp.slug.startswith('sprint_') %} <span class="badge-sprint">Sprint</span>{% endif %}</h3>
+                    <form method="POST" class="form-excluir-gp" onsubmit="return confirm('Excluir este GP? Ele será removido do calendário.');">
+                        <input type="hidden" name="action" value="excluir">
+                        <input type="hidden" name="gp_slug" value="{{ gp.slug }}">
+                        <button type="submit" class="btn-excluir-gp" title="Excluir GP">✕</button>
+                    </form>
+                </div>
                 <form method="POST" class="gp-form" data-gp-slug="{{ gp.slug }}">
+                    <input type="hidden" name="gp_slug" value="{{ gp.slug }}">
                     <div class="gp-item">
                         <div class="gp-info">
                             <div class="gp-dates">
@@ -54,6 +107,21 @@
         </div>
     </div>
 </div>
+
+<script>
+document.getElementById('btn-mostrar-criar').addEventListener('click', function() {
+    document.getElementById('form-criar-gp').style.display = 'block';
+    this.style.display = 'none';
+});
+document.getElementById('btn-cancelar-criar').addEventListener('click', function() {
+    document.getElementById('form-criar-gp').style.display = 'none';
+    document.getElementById('btn-mostrar-criar').style.display = 'inline-block';
+});
+document.getElementById('e_sprint').addEventListener('change', function() {
+    var hint = document.getElementById('hint-slug-sprint');
+    hint.style.display = this.checked ? 'block' : 'none';
+});
+</script>
 
 <div id="popup" class="popup {% if get_flashed_messages() %}show{% endif %}">
     <div class="popup-content">
@@ -121,6 +189,175 @@
     color: #fff;
     font-size: 1.2em;
     font-family: 'Orbitron', sans-serif;
+}
+
+.card-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.card-header-row h3 {
+    margin-bottom: 0;
+    flex: 1;
+}
+
+.badge-sprint {
+    display: inline-block;
+    font-size: 0.55em;
+    font-weight: normal;
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+
+.form-excluir-gp {
+    display: inline;
+}
+
+.btn-excluir-gp {
+    background: #dc3545;
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    font-size: 1em;
+    line-height: 1;
+    transition: all 0.2s;
+}
+
+.btn-excluir-gp:hover {
+    background: #c82333;
+    transform: scale(1.1);
+}
+
+/* Criar novo GP */
+.criar-gp-section {
+    margin-bottom: 25px;
+}
+
+.btn-criar-gp {
+    display: inline-block;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #28a745, #218838);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.95em;
+    cursor: pointer;
+    transition: all 0.3s;
+    width: 100%;
+    max-width: 220px;
+    text-align: center;
+}
+
+.btn-criar-gp:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+}
+
+.form-criar-gp {
+    background: rgba(42, 42, 42, 0.95);
+    border: 1px solid #444;
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 15px;
+}
+
+.form-criar-gp h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #e10600;
+    font-family: 'Orbitron', sans-serif;
+}
+
+/* Web: grid 3 colunas (nome+slug / data+hora corrida / data+hora classificação) */
+.criar-gp-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px 20px;
+    margin-bottom: 18px;
+}
+
+.form-criar-gp .form-group {
+    min-width: 0;
+}
+
+.form-criar-gp .form-group label {
+    display: block;
+    color: #aaa;
+    font-size: 0.85em;
+    margin-bottom: 6px;
+    font-family: 'Orbitron', sans-serif;
+}
+
+.form-group-checkbox {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+.form-group-checkbox .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    color: #fff;
+}
+
+.form-group-checkbox .checkbox-label input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+}
+
+.form-hint {
+    font-size: 0.8em;
+    color: #888;
+    margin-top: 6px;
+    margin-bottom: 0;
+}
+
+.form-hint-slug strong {
+    color: #e10600;
+}
+
+.form-criar-gp .form-group input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border: 1px solid #444;
+    border-radius: 6px;
+    background: #1a1a1a;
+    color: #fff;
+    font-size: 0.9em;
+}
+
+.criar-gp-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.btn-cancelar {
+    padding: 10px 20px;
+    background: #6c757d;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Orbitron', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-cancelar:hover {
+    background: #5a6268;
 }
 
 .gp-item {
@@ -292,6 +529,58 @@
 .sync-button:hover {
     background: rgba(0, 128, 255, 0.3);
     transform: translateY(-2px);
+}
+
+/* Criar novo GP - Tablet */
+@media (max-width: 992px) {
+    .criar-gp-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* Criar novo GP - Celular */
+@media (max-width: 576px) {
+    .criar-gp-section {
+        margin-bottom: 20px;
+    }
+
+    .btn-criar-gp {
+        max-width: 100%;
+        padding: 14px 20px;
+        font-size: 1em;
+    }
+
+    .form-criar-gp {
+        padding: 16px;
+        margin-top: 12px;
+    }
+
+    .form-criar-gp h3 {
+        font-size: 1.1em;
+        margin-bottom: 12px;
+    }
+
+    .criar-gp-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+        margin-bottom: 16px;
+    }
+
+    .form-criar-gp .form-group input {
+        padding: 12px;
+        font-size: 16px; /* evita zoom no iOS */
+    }
+
+    .criar-gp-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .criar-gp-actions .save-btn,
+    .criar-gp-actions .btn-cancelar {
+        width: 100%;
+        padding: 12px;
+    }
 }
 
 @media (min-width: 769px) {

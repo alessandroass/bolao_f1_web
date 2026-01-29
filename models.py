@@ -154,6 +154,46 @@ class PontuacaoSprint(db.Model):
     posicao = db.Column(db.Integer, unique=True, nullable=False)
     pontos = db.Column(db.Integer, nullable=False)
 
+
+class PalpiteSprint(db.Model):
+    __tablename__ = 'palpites_sprint'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    gp_slug = db.Column(db.String(80), nullable=False)
+    pos_1 = db.Column(db.String(80))
+    pos_2 = db.Column(db.String(80))
+    pos_3 = db.Column(db.String(80))
+    pos_4 = db.Column(db.String(80))
+    pos_5 = db.Column(db.String(80))
+    pos_6 = db.Column(db.String(80))
+    pos_7 = db.Column(db.String(80))
+    pos_8 = db.Column(db.String(80))
+    pos_9 = db.Column(db.String(80))
+    pos_10 = db.Column(db.String(80))
+    pole = db.Column(db.String(80))
+    
+    usuario = db.relationship('Usuario', backref=db.backref('palpites_sprint', lazy=True))
+
+
+class RespostaSprint(db.Model):
+    __tablename__ = 'respostas_sprint'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    gp_slug = db.Column(db.String(80), nullable=False)
+    pos_1 = db.Column(db.String(80))
+    pos_2 = db.Column(db.String(80))
+    pos_3 = db.Column(db.String(80))
+    pos_4 = db.Column(db.String(80))
+    pos_5 = db.Column(db.String(80))
+    pos_6 = db.Column(db.String(80))
+    pos_7 = db.Column(db.String(80))
+    pos_8 = db.Column(db.String(80))
+    pos_9 = db.Column(db.String(80))
+    pos_10 = db.Column(db.String(80))
+    pole = db.Column(db.String(80))
+
+
 class EquipeTemporada(db.Model):
     """Snapshot das equipes e seus pilotos em cada temporada - protege o histórico"""
     __tablename__ = 'equipes_temporada'

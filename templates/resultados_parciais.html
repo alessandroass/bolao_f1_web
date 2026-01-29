@@ -23,8 +23,10 @@
                             {% for gp in gps %}
                                 <th>
                                     <div class="gp-header">
-                                        <div class="gp-nome">{{ gp[1].split('(')[0].strip() }}</div>
-                                        <div class="gp-pais">({{ gp[1].split('(')[1].replace(')', '').strip() }})</div>
+                                        {% set gp_nome = gp[1].split('(')[0].strip() if gp[1] else '' %}
+                                        {% set gp_pais = gp[1].split('(')[1].replace(')', '').strip() if gp[1] and '(' in gp[1] else '' %}
+                                        <div class="gp-nome">{{ gp_nome }}</div>
+                                        {% if gp_pais %}<div class="gp-pais">({{ gp_pais }})</div>{% endif %}
                                     </div>
                                 </th>
                             {% endfor %}
@@ -37,7 +39,7 @@
                                 <td class="sticky-col posicao">{{ loop.index }}º</td>
                                 <td class="sticky-col usuario">{{ usuario.username }}</td>
                                 {% for gp in gps %}
-                                    <td class="pontos-gp">{{ usuario.pontos_por_gp.get(gp[0], '-') }}</td>
+                                    <td class="pontos-gp">{{ usuario.pontos_por_gp.get(gp[0], 0) }}</td>
                                 {% endfor %}
                                 <td class="sticky-col-right pontos">{{ usuario.total_pontos }}</td>
                             </tr>
