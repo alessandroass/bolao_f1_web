@@ -5,6 +5,8 @@ import random
 import string
 from datetime import datetime, timedelta
 import pytz
+from sqlalchemy import text
+from sqlalchemy.exc import IntegrityError
 from models import db, Usuario, Piloto, Palpite, Resposta, Pontuacao, ConfigVotacao, GP, PontuacaoSprint, PalpiteSprint, RespostaSprint, Temporada, CampeaoTemporada, Equipe, EquipeTemporada
 
 # Temporada ativa é sempre o ano atual (detectado automaticamente)
@@ -63,6 +65,16 @@ def create_tables():
 def sincronizar_gps_banco():
     """Não faz mais sincronização a partir de lista fixa. O calendário é gerenciado pelos GPs cadastrados em 'Gerenciar Datas dos GPs'."""
     pass
+
+
+def _corrigir_sequencia_gps():
+    """Corrige a sequência do id da tabela gps no PostgreSQL (evita duplicate key em gps_pkey após migrações)."""
+    try:
+        if 'postgresql' in (db.engine.url.drivername or ''):
+            db.session.execute(text("SELECT setval(pg_get_serial_sequence('gps', 'id'), COALESCE((SELECT MAX(id) FROM gps), 1))"))
+            db.session.commit()
+    except Exception:
+        db.session.rollback()
 
 def salvar_snapshot_equipes(ano):
     """Salva um snapshot das equipes e seus pilotos para a temporada especificada"""
@@ -1771,8 +1783,28 @@ def admin_datas_gps():
                     hora_classificacao=hora_classificacao
                 )
                 db.session.add(novo)
-                db.session.commit()
-                flash(f'GP "{nome}" criado com sucesso!', 'success')
+                try:
+                    db.session.commit()
+                    flash(f'GP "{nome}" criado com sucesso!', 'success')
+                except IntegrityError as e:
+                    if 'gps_pkey' in str(getattr(e, 'orig', e)):
+                        db.session.rollback()
+                        _corrigir_sequencia_gps()
+                        novo2 = GP(
+                            slug=slug,
+                            temporada_ano=TEMPORADA_ATIVA,
+                            nome=nome,
+                            data_corrida=data_corrida,
+                            hora_corrida=hora_corrida,
+                            data_classificacao=data_classificacao,
+                            hora_classificacao=hora_classificacao
+                        )
+                        db.session.add(novo2)
+                        db.session.commit()
+                        flash(f'GP "{nome}" criado com sucesso!', 'success')
+                    else:
+                        db.session.rollback()
+                        flash(f'Erro ao criar GP: {str(e)}', 'error')
             except Exception as e:
                 db.session.rollback()
                 flash(f'Erro ao criar GP: {str(e)}', 'error')
@@ -1834,7 +1866,25 @@ def admin_datas_gps():
                     hora_classificacao=hora_classificacao
                 )
                 db.session.add(gp)
-            db.session.commit()
+            try:
+                db.session.commit()
+            except IntegrityError as e:
+                if 'gps_pkey' in str(getattr(e, 'orig', e)):
+                    db.session.rollback()
+                    _corrigir_sequencia_gps()
+                    gp = GP(
+                        slug=gp_slug,
+                        temporada_ano=TEMPORADA_ATIVA,
+                        nome=nome_gp,
+                        data_corrida=data_corrida,
+                        hora_corrida=hora_corrida,
+                        data_classificacao=data_classificacao,
+                        hora_classificacao=hora_classificacao
+                    )
+                    db.session.add(gp)
+                    db.session.commit()
+                else:
+                    raise
             
             # Se for uma requisição AJAX, retorna JSON
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -1845,6 +1895,12 @@ def admin_datas_gps():
                 })
             
             flash('Datas atualizadas com sucesso! O calendário da tela principal foi atualizado.', 'success')
+        except IntegrityError as e:
+            db.session.rollback()
+            msg = f'Erro ao atualizar datas: {str(e)}'
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'success': False, 'message': msg, 'category': 'error'})
+            flash(msg, 'error')
         except Exception as e:
             db.session.rollback()
             if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
@@ -2052,11 +2108,31 @@ def admin_gerenciar_gps():
                             hora_classificacao="12:00"
                         )
                         db.session.add(gp)
-                        db.session.commit()
-                        flash('GP adicionado com sucesso!', 'success')
+                        try:
+                            db.session.commit()
+                            flash('GP adicionado com sucesso!', 'success')
+                        except IntegrityError as e:
+                            if 'gps_pkey' in str(getattr(e, 'orig', e)):
+                                db.session.rollback()
+                                _corrigir_sequencia_gps()
+                                gp = GP(
+                                    slug=slug,
+                                    nome=nome,
+                                    data_corrida=data,
+                                    hora_corrida="12:00",
+                                    data_classificacao=data,
+                                    hora_classificacao="12:00"
+                                )
+                                db.session.add(gp)
+                                db.session.commit()
+                                flash('GP adicionado com sucesso!', 'success')
+                            else:
+                                db.session.rollback()
+                                flash(f'Erro ao adicionar GP: {str(e)}', 'error')
                     else:
                         flash('Este GP já está cadastrado!', 'error')
                 except Exception as e:
+                    db.session.rollback()
                     flash(f'Erro ao adicionar GP: {str(e)}', 'error')
             
         # Se for uma requisição de excluir GP
