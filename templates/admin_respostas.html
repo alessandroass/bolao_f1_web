@@ -24,6 +24,17 @@
 
     <div class="form-container">
         <form method="POST" class="form">
+            {% if not is_sprint %}
+            <div class="form-group percentual-corrida">
+                <label>Percentual da corrida completado (pontuação reduzida):</label>
+                <div class="percentual-options">
+                    <label class="percentual-option"><input type="radio" name="percentual_corrida" value="25" {% if percentual_corrida == 25 %}checked{% endif %}> 0 a 25% (Top 5: 6-4-3-2-1)</label>
+                    <label class="percentual-option"><input type="radio" name="percentual_corrida" value="50" {% if percentual_corrida == 50 %}checked{% endif %}> 25 a 50% (Top 9: 13-10-8-6-5-4-3-2-1)</label>
+                    <label class="percentual-option"><input type="radio" name="percentual_corrida" value="75" {% if percentual_corrida == 75 %}checked{% endif %}> 50 a 75% (Top 10: 19-14-12-9-8-6-5-3-2-1)</label>
+                    <label class="percentual-option"><input type="radio" name="percentual_corrida" value="100" {% if percentual_corrida == 100 or not percentual_corrida %}checked{% endif %}> Mais de 75% (pontuação completa)</label>
+                </div>
+            </div>
+            {% endif %}
             <div class="form-grid">
                 <div class="form-group">
                     <label for="pole_position">Pole Position:</label>
@@ -120,6 +131,31 @@
     margin-bottom: 8px;
     color: #fff;
     font-family: 'Orbitron', sans-serif;
+}
+
+.percentual-corrida {
+    margin-bottom: 20px;
+    padding: 12px;
+    background: rgba(225, 6, 0, 0.1);
+    border-radius: 6px;
+    border: 1px solid rgba(225, 6, 0, 0.3);
+}
+.percentual-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+}
+.percentual-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    color: #ccc;
+    font-size: 0.9em;
+}
+.percentual-option input {
+    accent-color: #e10600;
 }
 
 .form-group select {

@@ -100,6 +100,7 @@ class Resposta(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     gp_slug = db.Column(db.String(80), nullable=False)
     temporada_ano = db.Column(db.Integer, default=2025)  # Ano da temporada
+    percentual_corrida = db.Column(db.Integer, default=100, nullable=True)  # 25, 50, 75 ou 100 (pontuação reduzida)
     pos_1 = db.Column(db.String(80))
     pos_2 = db.Column(db.String(80))
     pos_3 = db.Column(db.String(80))

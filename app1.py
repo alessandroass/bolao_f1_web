@@ -194,6 +194,7 @@ def migrar_banco_automatico():
             ("palpites", "temporada_ano", "INTEGER DEFAULT 2025"),
             ("respostas", "temporada_ano", "INTEGER DEFAULT 2025"),
             ("gps", "temporada_ano", "INTEGER DEFAULT 2025"),
+            ("respostas", "percentual_corrida", "INTEGER DEFAULT 100"),
         ]
         
         for tabela, coluna, tipo in migracoes:
@@ -367,11 +368,12 @@ def tela_gps():
         if resposta:
             if palpite.pole == resposta.pole and resposta.pole is not None:
                 pontos_total += pontuacao_sprint.get(0, 1) if palpite.gp_slug.startswith('sprint') else pontuacao.get(0, 5)
+            pts_corrida = pontuacao_sprint if palpite.gp_slug.startswith('sprint') else pontuacao_corrida_principal(resposta, pontuacao)
             for i in range(1, 11):
                 palpite_pos = getattr(palpite, f'pos_{i}')
                 resposta_pos = getattr(resposta, f'pos_{i}')
                 if palpite_pos == resposta_pos and resposta_pos is not None:
-                    pontos_total += pontuacao_sprint.get(i, 0) if palpite.gp_slug.startswith('sprint') else pontuacao.get(i, 0)
+                    pontos_total += pts_corrida.get(i, 0)
     for palpite in palpites_sprint_list:
         gp_slug = palpite.gp_slug
         resposta = respostas_sprint.get(gp_slug) or respostas_sprint.get(f'sprint_{gp_slug}' if not gp_slug.startswith('sprint_') else gp_slug.replace('sprint_', '', 1))
@@ -394,11 +396,12 @@ def tela_gps():
             if resposta:
                 if palpite.pole == resposta.pole and resposta.pole is not None:
                     pontos_user += pontuacao_sprint.get(0, 1) if palpite.gp_slug.startswith('sprint') else pontuacao.get(0, 5)
+                pts_corrida = pontuacao_sprint if palpite.gp_slug.startswith('sprint') else pontuacao_corrida_principal(resposta, pontuacao)
                 for i in range(1, 11):
                     palpite_pos = getattr(palpite, f'pos_{i}')
                     resposta_pos = getattr(resposta, f'pos_{i}')
                     if palpite_pos == resposta_pos and resposta_pos is not None:
-                        pontos_user += pontuacao_sprint.get(i, 0) if palpite.gp_slug.startswith('sprint') else pontuacao.get(i, 0)
+                        pontos_user += pts_corrida.get(i, 0)
         palpites_sprint_user = PalpiteSprint.query.filter_by(usuario_id=user.id).all()
         for palpite in palpites_sprint_user:
             gp_slug = palpite.gp_slug
@@ -756,11 +759,12 @@ def meus_resultados():
         if resposta:
             if palpite.pole == resposta.pole and resposta.pole is not None:
                 pontos_gp += pontuacao_sprint.get(0, 1) if gp_slug.startswith('sprint') else pontuacao.get(0, 5)
+            pts_corrida = pontuacao_sprint if gp_slug.startswith('sprint') else pontuacao_corrida_principal(resposta, pontuacao)
             for i in range(1, 11):
                 palpite_pos = getattr(palpite, f'pos_{i}')
                 resposta_pos = getattr(resposta, f'pos_{i}')
                 if palpite_pos == resposta_pos and resposta_pos is not None:
-                    pontos_gp += pontuacao_sprint.get(i, 0) if gp_slug.startswith('sprint') else pontuacao.get(i, 0)
+                    pontos_gp += pts_corrida.get(i, 0)
         total_geral += pontos_gp
         palpite.resposta = resposta
         resultados.append({'gp': gp_nome, 'palpite': palpite, 'pontos': pontos_gp, 'tipo': 'corrida', 'is_sprint': False})
@@ -822,11 +826,12 @@ def classificacao():
             if resposta:
                 if palpite.pole == resposta.pole and resposta.pole is not None:
                     total_pontos += pontuacao_sprint.get(0, 1) if palpite.gp_slug.startswith('sprint') else pontuacao.get(0, 5)
+                pts_corrida = pontuacao_sprint if palpite.gp_slug.startswith('sprint') else pontuacao_corrida_principal(resposta, pontuacao)
                 for i in range(1, 11):
                     palpite_pos = getattr(palpite, f'pos_{i}')
                     resposta_pos = getattr(resposta, f'pos_{i}')
                     if palpite_pos == resposta_pos and resposta_pos is not None:
-                        total_pontos += pontuacao_sprint.get(i, 0) if palpite.gp_slug.startswith('sprint') else pontuacao.get(i, 0)
+                        total_pontos += pts_corrida.get(i, 0)
         
         palpites_sprint_usuario = [p for p in palpites_sprint if p.usuario_id == usuario.id]
         for palpite in palpites_sprint_usuario:
@@ -876,7 +881,7 @@ def classificacao_pilotos_atual():
 
     for resposta in respostas:
         is_sprint = resposta.gp_slug.startswith('sprint')
-        pontos_usar = pontos_sprint if is_sprint else pontos_f1
+        pontos_usar = pontos_sprint if is_sprint else pontuacao_corrida_principal(resposta, pontos_f1)
         for pos in range(1, 11):
             piloto_codigo = getattr(resposta, f'pos_{pos}', None)
             if piloto_codigo:
@@ -966,7 +971,7 @@ def pontuacao_pilotos_detalhada_atual():
         for corrida in corridas:
             pontos = 0
             posicao = None
-            pontos_usar = pontos_sprint if corrida['is_sprint'] else pontos_f1
+            pontos_usar = pontos_sprint if corrida['is_sprint'] else pontuacao_corrida_principal(corrida['resposta'], pontos_f1)
             for pos in range(1, 11):
                 if getattr(corrida['resposta'], f'pos_{pos}', None) == piloto.nome:
                     posicao = pos
@@ -1001,7 +1006,7 @@ def classificacao_construtores_atual():
 
     for resposta in respostas:
         is_sprint = resposta.gp_slug.startswith('sprint')
-        pontos_usar = pontos_sprint if is_sprint else pontos_f1
+        pontos_usar = pontos_sprint if is_sprint else pontuacao_corrida_principal(resposta, pontos_f1)
         for pos in range(1, 11):
             piloto_codigo = getattr(resposta, f'pos_{pos}', None)
             if piloto_codigo:
@@ -1087,6 +1092,26 @@ def admin():
     
     return render_template('admin.html', gps=gps_com_config, usuarios=usuarios, pilotos=pilotos)
 
+# Pontuação reduzida por percentual da corrida (só corrida principal)
+PONTOS_REDUZIDOS_25 = {1: 6, 2: 4, 3: 3, 4: 2, 5: 1}  # 0-25%: top 5
+PONTOS_REDUZIDOS_50 = {1: 13, 2: 10, 3: 8, 4: 6, 5: 5, 6: 4, 7: 3, 8: 2, 9: 1}  # 25-50%: top 9
+PONTOS_REDUZIDOS_75 = {1: 19, 2: 14, 3: 12, 4: 9, 5: 8, 6: 6, 7: 5, 8: 3, 9: 2, 10: 1}  # 50-75%: top 10
+
+def pontuacao_corrida_principal(resposta, pontuacao_completa_dict=None):
+    """Retorna dict posição -> pontos para corrida principal. Resposta pode ser objeto Resposta com percentual_corrida."""
+    if pontuacao_completa_dict is None:
+        pontuacao_completa_dict = {p.posicao: p.pontos for p in Pontuacao.query.all()}
+    if not pontuacao_completa_dict:
+        pontuacao_completa_dict = {1: 25, 2: 18, 3: 15, 4: 12, 5: 10, 6: 8, 7: 6, 8: 4, 9: 2, 10: 1}
+    pc = getattr(resposta, 'percentual_corrida', None) or 100
+    if pc <= 25:
+        return PONTOS_REDUZIDOS_25
+    if pc <= 50:
+        return PONTOS_REDUZIDOS_50
+    if pc <= 75:
+        return PONTOS_REDUZIDOS_75
+    return pontuacao_completa_dict
+
 # Rota para editar respostas de um GP
 @app.route('/admin/respostas/<nome_gp>', methods=['GET', 'POST'])
 @admin_required
@@ -1109,7 +1134,9 @@ def admin_respostas(nome_gp):
                                 nome_gp=nome_gp,
                                 nome_gp_exibicao=nome_gp_exibicao,
                                 grid_2025=grid_2025,
-                                resposta=resposta_temp)
+                                resposta=resposta_temp,
+                                is_sprint=is_sprint,
+                                percentual_corrida=int(request.form.get('percentual_corrida', 100) or 100))
 
         if len(posicoes) != len(set(posicoes)):
             flash('Não é permitido selecionar o mesmo piloto mais de uma vez nas posições!', 'error')
@@ -1118,7 +1145,11 @@ def admin_respostas(nome_gp):
                                 nome_gp=nome_gp,
                                 nome_gp_exibicao=nome_gp_exibicao,
                                 grid_2025=grid_2025,
-                                resposta=resposta_temp)
+                                resposta=resposta_temp,
+                                is_sprint=is_sprint,
+                                percentual_corrida=int(request.form.get('percentual_corrida', 100) or 100))
+
+        percentual = int(request.form.get('percentual_corrida', 100) or 100) if not is_sprint else None  # só corrida principal
 
         if is_sprint:
             resposta_existente = RespostaSprint.query.filter_by(gp_slug=nome_gp).first()
@@ -1144,10 +1175,12 @@ def admin_respostas(nome_gp):
                 resposta_existente.pos_7, resposta_existente.pos_8 = posicoes[6], posicoes[7]
                 resposta_existente.pos_9, resposta_existente.pos_10 = posicoes[8], posicoes[9]
                 resposta_existente.pole = pole
+                resposta_existente.percentual_corrida = percentual
             else:
                 nova_resposta = Resposta(
                     gp_slug=nome_gp,
                     temporada_ano=TEMPORADA_ATIVA,
+                    percentual_corrida=percentual,
                     pole=pole,
                     pos_1=posicoes[0], pos_2=posicoes[1], pos_3=posicoes[2], pos_4=posicoes[3],
                     pos_5=posicoes[4], pos_6=posicoes[5], pos_7=posicoes[6], pos_8=posicoes[7],
@@ -1162,18 +1195,26 @@ def admin_respostas(nome_gp):
                              nome_gp=nome_gp,
                              nome_gp_exibicao=nome_gp_exibicao,
                              grid_2025=grid_2025,
-                             resposta=resposta_temp)
+                             resposta=resposta_temp,
+                             is_sprint=is_sprint,
+                             percentual_corrida=percentual if percentual is not None else 100)
 
     if is_sprint:
         resposta = RespostaSprint.query.filter_by(gp_slug=nome_gp).first()
     else:
         resposta = Resposta.query.filter_by(gp_slug=nome_gp, temporada_ano=TEMPORADA_ATIVA).first()
 
+    percentual_corrida = 100
+    if resposta and not is_sprint and hasattr(resposta, 'percentual_corrida') and resposta.percentual_corrida is not None:
+        percentual_corrida = resposta.percentual_corrida
+
     return render_template('admin_respostas.html',
                          nome_gp=nome_gp,
                          nome_gp_exibicao=nome_gp_exibicao,
                          grid_2025=grid_2025,
-                         resposta=resposta)
+                         resposta=resposta,
+                         is_sprint=is_sprint,
+                         percentual_corrida=percentual_corrida)
 
 # Rota para editar pontuação
 @app.route('/admin/pontuacao', methods=['GET', 'POST'])
@@ -1554,11 +1595,12 @@ def resultados_parciais(ano=None):
             if resposta:
                 if palpite.pole == resposta.pole and resposta.pole is not None:
                     pontos_gp += pontuacao.get(0, 5)
+                pts_corrida = pontuacao_corrida_principal(resposta, pontuacao)
                 for i in range(1, 11):
                     palpite_pos = getattr(palpite, f'pos_{i}')
                     resposta_pos = getattr(resposta, f'pos_{i}')
                     if palpite_pos == resposta_pos and resposta_pos is not None:
-                        pontos_gp += pontuacao.get(i, 0)
+                        pontos_gp += pts_corrida.get(i, 0)
             usuario_info['pontos_por_gp'][palpite.gp_slug] = pontos_gp
             usuario_info['total_pontos'] += pontos_gp
         
@@ -1999,12 +2041,13 @@ def resultados(nome_gp):
         if palpite.pole == resposta.pole:
             pontos += pontuacao.get(0, 0)
         
-        # Verifica posições
+        # Verifica posições (usa pontuação reduzida se corrida interrompida)
+        pts_corrida = pontuacao_corrida_principal(resposta, pontuacao)
         for i in range(1, 11):
             palpite_pos = getattr(palpite, f'pos_{i}')
             resposta_pos = getattr(resposta, f'pos_{i}')
             if palpite_pos == resposta_pos:
-                pontos += pontuacao.get(i, 0)
+                pontos += pts_corrida.get(i, 0)
         
         resultados.append({
             'usuario': palpite.usuario.username,
@@ -2056,12 +2099,13 @@ def ranking():
             if palpite.pole == resposta.pole:
                 pontos_total += pontuacao.get(0, 0)
             
-            # Verifica posições
+            # Verifica posições (usa pontuação reduzida se corrida interrompida)
+            pts_corrida = pontuacao_corrida_principal(resposta, pontuacao)
             for i in range(1, 11):
                 palpite_pos = getattr(palpite, f'pos_{i}')
                 resposta_pos = getattr(resposta, f'pos_{i}')
                 if palpite_pos == resposta_pos:
-                    pontos_total += pontuacao.get(i, 0)
+                    pontos_total += pts_corrida.get(i, 0)
         
         ranking.append({
             'usuario': usuario.username,
@@ -2588,11 +2632,12 @@ def resultados_usuario(username):
         if resposta:
             if palpite.pole == resposta.pole and resposta.pole is not None:
                 pontos_gp += pontuacao_sprint.get(0, 1) if gp_slug.startswith('sprint') else pontuacao.get(0, 5)
+            pts_corrida = pontuacao_sprint if gp_slug.startswith('sprint') else pontuacao_corrida_principal(resposta, pontuacao)
             for i in range(1, 11):
                 palpite_pos = getattr(palpite, f'pos_{i}')
                 resposta_pos = getattr(resposta, f'pos_{i}')
                 if palpite_pos == resposta_pos and resposta_pos is not None:
-                    pontos_gp += pontuacao_sprint.get(i, 0) if gp_slug.startswith('sprint') else pontuacao.get(i, 0)
+                    pontos_gp += pts_corrida.get(i, 0)
         total_geral += pontos_gp
         palpite.resposta = resposta
         resultados.append({'gp': gp_nome, 'palpite': palpite, 'pontos': pontos_gp, 'tipo': 'corrida', 'is_sprint': False})
@@ -2932,15 +2977,13 @@ def calcular_classificacao_temporada(ano):
                     else:
                         total_pontos += pontuacao.get(0, 5)
                 
-                # Verifica posições
+                # Verifica posições (usa pontuação reduzida se corrida principal interrompida)
+                pts_corrida = pontuacao_sprint if palpite.gp_slug.startswith('sprint') else pontuacao_corrida_principal(resposta, pontuacao)
                 for i in range(1, 11):
                     palpite_pos = getattr(palpite, f'pos_{i}')
                     resposta_pos = getattr(resposta, f'pos_{i}')
                     if palpite_pos == resposta_pos and resposta_pos is not None:
-                        if palpite.gp_slug.startswith('sprint'):
-                            total_pontos += pontuacao_sprint.get(i, 0)
-                        else:
-                            total_pontos += pontuacao.get(i, 0)
+                        total_pontos += pts_corrida.get(i, 0)
         
         classificacao.append({
             'usuario': usuario,
@@ -3059,12 +3102,12 @@ def classificacao_pilotos(ano):
         # Ignorar sprints para classificação oficial (ou incluir com pontuação diferente)
         is_sprint = resposta.gp_slug.startswith('sprint')
         
-        # Pontuação de sprint é diferente na F1
+        # Pontuação de sprint é diferente na F1; corrida principal usa pontuação reduzida se % < 75
         if is_sprint:
             pontos_sprint = {1: 8, 2: 7, 3: 6, 4: 5, 5: 4, 6: 3, 7: 2, 8: 1}
             pontos_usar = pontos_sprint
         else:
-            pontos_usar = pontos_f1
+            pontos_usar = pontuacao_corrida_principal(resposta, pontos_f1)
         
         # Percorrer as 10 posições
         for pos in range(1, 11):
@@ -3178,7 +3221,7 @@ def pontuacao_pilotos_detalhada(ano):
         for corrida in corridas:
             pontos = 0
             posicao = None
-            pontos_usar = pontos_sprint if corrida['is_sprint'] else pontos_f1
+            pontos_usar = pontos_sprint if corrida['is_sprint'] else pontuacao_corrida_principal(corrida['resposta'], pontos_f1)
             
             # Encontrar posição do piloto nesta corrida
             for pos in range(1, 11):
@@ -3233,7 +3276,7 @@ def classificacao_construtores(ano):
             pontos_sprint = {1: 8, 2: 7, 3: 6, 4: 5, 5: 4, 6: 3, 7: 2, 8: 1}
             pontos_usar = pontos_sprint
         else:
-            pontos_usar = pontos_f1
+            pontos_usar = pontuacao_corrida_principal(resposta, pontos_f1)
         
         for pos in range(1, 11):
             piloto_codigo = getattr(resposta, f'pos_{pos}', None)
