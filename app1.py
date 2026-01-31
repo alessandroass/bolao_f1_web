@@ -265,6 +265,39 @@ def admin_required(f):
     decorated_function.__name__ = f.__name__
     return decorated_function
 
+def get_titulos_campeao(usuario_id):
+    """Quantas vezes o usuário foi campeão (1º lugar) quando a temporada virou ano."""
+    if not usuario_id:
+        return 0
+    return CampeaoTemporada.query.filter_by(usuario_id=usuario_id, posicao=1).count()
+
+def ensure_campeoes_saved(temporada_id, top3_list):
+    """Grava o pódio (1º, 2º, 3º) no banco se ainda não existir para essa temporada."""
+    if CampeaoTemporada.query.filter_by(temporada_id=temporada_id).first():
+        return
+    for i, item in enumerate(top3_list):
+        if item.get('total_pontos', 0) <= 0:
+            continue
+        usuario = item.get('usuario')
+        if not usuario:
+            continue
+        ct = CampeaoTemporada(
+            temporada_id=temporada_id,
+            usuario_id=usuario.id,
+            posicao=i + 1,
+            pontos_total=item['total_pontos']
+        )
+        db.session.add(ct)
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+
+@app.context_processor
+def inject_titulos_campeao():
+    """Disponibiliza titulos_campeao(usuario_id) em todos os templates."""
+    return dict(titulos_campeao=get_titulos_campeao)
+
 # Rota principal - redireciona para login
 @app.route('/')
 def index():
@@ -850,7 +883,8 @@ def classificacao():
         classificacao.append({
             'username': usuario.username,
             'first_name': usuario.first_name,
-            'total_pontos': total_pontos
+            'total_pontos': total_pontos,
+            'usuario_id': usuario.id
         })
     
     classificacao.sort(key=lambda x: x['total_pontos'], reverse=True)
@@ -1579,6 +1613,7 @@ def resultados_parciais(ano=None):
     for usuario in usuarios:
         usuario_info = {
             'username': usuario.username,
+            'usuario_id': usuario.id,
             'total_pontos': 0,
             'pontos_por_gp': {}
         }
@@ -3026,6 +3061,10 @@ def historico_temporadas():
                     })()
                     campeoes_calculados.append(campeao_obj)
             campeoes = campeoes_calculados
+            # Só grava campeão quando a temporada já passou (virou o ano)
+            if temp.ano < TEMPORADA_ATIVA:
+                top3_list = [{'usuario': c.usuario, 'total_pontos': c.pontos_total} for c in campeoes_calculados]
+                ensure_campeoes_saved(temp.id, top3_list)
         
         temporadas_info.append({
             'temporada': temp,
@@ -3067,6 +3106,10 @@ def ver_temporada(ano):
                 })()
                 campeoes_calculados.append(campeao_obj)
         campeoes = campeoes_calculados
+        # Só grava campeão quando a temporada já passou (virou o ano)
+        if ano < TEMPORADA_ATIVA:
+            top3_list = [{'usuario': c.usuario, 'total_pontos': c.pontos_total} for c in campeoes_calculados]
+            ensure_campeoes_saved(temporada.id, top3_list)
     
     return render_template('ver_temporada.html',
                          temporada=temporada,

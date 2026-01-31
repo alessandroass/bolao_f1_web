@@ -42,7 +42,7 @@
                     {% for campeao in item.campeoes %}
                     <div class="podio-item posicao-{{ campeao.posicao }}">
                         <span class="posicao">{{ campeao.posicao }}º</span>
-                        <span class="nome">{{ campeao.usuario.username }}</span>
+                        <span class="nome">{% set t = titulos_campeao(campeao.usuario.id) %}{% if t %}<span class="campeao-stars blink">{% for i in range(t) %}⭐{% endfor %}</span>{% endif %}{{ campeao.usuario.username }}</span>
                         <span class="pontos">{{ campeao.pontos_total }} pts</span>
                     </div>
                     {% endfor %}

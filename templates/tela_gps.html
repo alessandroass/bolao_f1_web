@@ -37,7 +37,7 @@
         </div>
         <div class="user-info">
           <div class="welcome-message">
-            Bem-vindo, {{ session.username }}!
+            Bem-vindo, {% if session.get('user_id') %}{% set t = titulos_campeao(session.get('user_id')) %}{% if t %}<span class="campeao-stars blink">{% for i in range(t) %}⭐{% endfor %}</span>{% endif %}{% endif %}{{ session.username }}!
           </div>
           <div class="user-ranking">
             <span class="ranking-posicao">{{ posicao }}º</span>

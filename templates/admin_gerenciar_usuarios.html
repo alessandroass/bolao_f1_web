@@ -16,7 +16,7 @@
                 {% for usuario in usuarios %}
                 <div class="user-card">
                     <div class="user-info">
-                        <span class="username">{{ usuario.username }}</span>
+                        <span class="username">{% set t = titulos_campeao(usuario.id) %}{% if t %}<span class="campeao-stars blink">{% for i in range(t) %}⭐{% endfor %}</span>{% endif %}{{ usuario.username }}</span>
                         <span class="admin-badge" {% if not usuario.is_admin %}style="display: none;"{% endif %}>Admin</span>
                     </div>
                     <div class="user-actions">

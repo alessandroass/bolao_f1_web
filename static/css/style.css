@@ -120,4 +120,20 @@ body {
         min-width: auto;
     }
 }
-  
+
+/* Estrela de campeão (antes do nome, não atrapalha tabelas) */
+.campeao-stars {
+    display: inline;
+    white-space: nowrap;
+    margin-right: 2px;
+    font-size: 0.95em;
+    vertical-align: middle;
+    line-height: 1;
+}
+.campeao-stars.blink {
+    animation: campeao-blink 1.2s ease-in-out infinite;
+}
+@keyframes campeao-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}

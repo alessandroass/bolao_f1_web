@@ -35,7 +35,7 @@
                             <div class="competidor-avatar">
                                 <span>{{ (classificacao[1].first_name or classificacao[1].username)[0] | upper }}</span>
                             </div>
-                            <div class="competidor-nome">{{ classificacao[1].username }}</div>
+                            <div class="competidor-nome">{% set t1 = titulos_campeao(classificacao[1].usuario_id) %}{% if t1 %}<span class="campeao-stars blink">{% for i in range(t1) %}⭐{% endfor %}</span>{% endif %}{{ classificacao[1].username }}</div>
                             <div class="competidor-pontos">{{ classificacao[1].total_pontos }} pts</div>
                         </div>
                     </a>
@@ -49,7 +49,7 @@
                             <div class="competidor-avatar ouro">
                                 <span>{{ (classificacao[0].first_name or classificacao[0].username)[0] | upper }}</span>
                             </div>
-                            <div class="competidor-nome campeao">{{ classificacao[0].username }}</div>
+                            <div class="competidor-nome campeao">{% set t0 = titulos_campeao(classificacao[0].usuario_id) %}{% if t0 %}<span class="campeao-stars blink">{% for i in range(t0) %}⭐{% endfor %}</span>{% endif %}{{ classificacao[0].username }}</div>
                             <div class="competidor-pontos">{{ classificacao[0].total_pontos }} pts</div>
                         </div>
                     </a>
@@ -60,7 +60,7 @@
                             <div class="competidor-avatar">
                                 <span>{{ (classificacao[2].first_name or classificacao[2].username)[0] | upper }}</span>
                             </div>
-                            <div class="competidor-nome">{{ classificacao[2].username }}</div>
+                            <div class="competidor-nome">{% set t2 = titulos_campeao(classificacao[2].usuario_id) %}{% if t2 %}<span class="campeao-stars blink">{% for i in range(t2) %}⭐{% endfor %}</span>{% endif %}{{ classificacao[2].username }}</div>
                             <div class="competidor-pontos">{{ classificacao[2].total_pontos }} pts</div>
                         </div>
                     </a>
@@ -100,9 +100,7 @@
                             <tr>
                                 <td class="posicao">{{ loop.index }}º</td>
                                 <td class="usuario">
-                                    <a href="{{ url_for('resultados_usuario', username=usuario.username) }}" class="link-usuario">
-                                        {{ usuario.username }}
-                                    </a>
+                                    <a href="{{ url_for('resultados_usuario', username=usuario.username) }}" class="link-usuario">{% set t = titulos_campeao(usuario.usuario_id) %}{% if t %}<span class="campeao-stars blink">{% for i in range(t) %}⭐{% endfor %}</span>{% endif %}{{ usuario.username }}</a>
                                 </td>
                                 <td class="pontos">{{ usuario.total_pontos }}</td>
                             </tr>
@@ -130,9 +128,7 @@
                         <tr class="{% if loop.index == 1 %}primeiro{% elif loop.index == 2 %}segundo{% elif loop.index == 3 %}terceiro{% endif %}">
                             <td class="posicao">{{ loop.index }}º</td>
                             <td class="usuario">
-                                <a href="{{ url_for('resultados_usuario', username=usuario.username) }}" class="link-usuario">
-                                    {{ usuario.username }}
-                                </a>
+                                <a href="{{ url_for('resultados_usuario', username=usuario.username) }}" class="link-usuario">{% set t = titulos_campeao(usuario.usuario_id) %}{% if t %}<span class="campeao-stars blink">{% for i in range(t) %}⭐{% endfor %}</span>{% endif %}{{ usuario.username }}</a>
                             </td>
                             <td class="pontos">{{ usuario.total_pontos }}</td>
                         </tr>

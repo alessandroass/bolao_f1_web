@@ -8,7 +8,7 @@
     
     <h1 class="titulo">
         {% if usuario_visualizado and usuario_visualizado.username != session.username %}
-            Resultados de {{ usuario_visualizado.username }}
+            Resultados de {% set t = titulos_campeao(usuario_visualizado.id) %}{% if t %}<span class="campeao-stars blink">{% for i in range(t) %}⭐{% endfor %}</span>{% endif %}{{ usuario_visualizado.username }}
         {% else %}
             Meus Resultados
         {% endif %}

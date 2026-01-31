@@ -29,14 +29,14 @@
                 <span>{{ usuario.first_name[0] }}</span>
             </div>
             <h2>{{ usuario.first_name }}</h2>
-            <p class="username">@{{ usuario.username }}</p>
+            <p class="username">@{% set t = titulos_campeao(usuario.id) %}{% if t %}<span class="campeao-stars blink">{% for i in range(t) %}⭐{% endfor %}</span>{% endif %}{{ usuario.username }}</p>
         </div>
 
         <div class="profile-info">
             <div class="info-group">
                 <label>Nome de Usuário</label>
                 <div class="edit-container">
-                    <p id="username-display">{{ usuario.username }}</p>
+                    <p id="username-display">{% set t = titulos_campeao(usuario.id) %}{% if t %}<span class="campeao-stars blink">{% for i in range(t) %}⭐{% endfor %}</span>{% endif %}{{ usuario.username }}</p>
                     <form id="edit-username-form" class="edit-form" style="display: none;" method="POST" action="{{ url_for('atualizar_usuario') }}">
                         <input type="text" name="username" value="{{ usuario.username }}" required>
                         <div class="button-group">

@@ -54,7 +54,7 @@
                     <div class="competidor-avatar">
                         <span>{{ (campeao.usuario.first_name or campeao.usuario.username)[0] | upper }}</span>
                     </div>
-                    <div class="competidor-nome">{{ campeao.usuario.username }}</div>
+                    <div class="competidor-nome">{% set t = titulos_campeao(campeao.usuario.id) %}{% if t %}<span class="campeao-stars blink">{% for i in range(t) %}⭐{% endfor %}</span>{% endif %}{{ campeao.usuario.username }}</div>
                     <div class="competidor-pontos">{{ campeao.pontos_total }} pts</div>
                 </div>
                 {% endif %}
@@ -67,7 +67,7 @@
                     <div class="competidor-avatar ouro">
                         <span>{{ (campeao.usuario.first_name or campeao.usuario.username)[0] | upper }}</span>
                     </div>
-                    <div class="competidor-nome campeao">{{ campeao.usuario.username }}</div>
+                    <div class="competidor-nome campeao">{% set t = titulos_campeao(campeao.usuario.id) %}{% if t %}<span class="campeao-stars blink">{% for i in range(t) %}⭐{% endfor %}</span>{% endif %}{{ campeao.usuario.username }}</div>
                     <div class="competidor-pontos">{{ campeao.pontos_total }} pts</div>
                 </div>
                 {% endif %}
@@ -79,7 +79,7 @@
                     <div class="competidor-avatar">
                         <span>{{ (campeao.usuario.first_name or campeao.usuario.username)[0] | upper }}</span>
                     </div>
-                    <div class="competidor-nome">{{ campeao.usuario.username }}</div>
+                    <div class="competidor-nome">{% set t = titulos_campeao(campeao.usuario.id) %}{% if t %}<span class="campeao-stars blink">{% for i in range(t) %}⭐{% endfor %}</span>{% endif %}{{ campeao.usuario.username }}</div>
                     <div class="competidor-pontos">{{ campeao.pontos_total }} pts</div>
                 </div>
                 {% endif %}
@@ -120,7 +120,7 @@
                     {% for item in classificacao %}
                     <tr class="{% if loop.index == 1 %}primeiro{% elif loop.index == 2 %}segundo{% elif loop.index == 3 %}terceiro{% endif %}">
                         <td class="posicao">{{ loop.index }}º</td>
-                        <td class="usuario">{{ item.usuario.username }}</td>
+                        <td class="usuario">{% set t = titulos_campeao(item.usuario.id) %}{% if t %}<span class="campeao-stars blink">{% for i in range(t) %}⭐{% endfor %}</span>{% endif %}{{ item.usuario.username }}</td>
                         <td class="pontos">{{ item.total_pontos }}</td>
                     </tr>
                     {% endfor %}
