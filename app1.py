@@ -218,6 +218,50 @@ def migrar_banco_automatico():
     except Exception as e:
         print(f"Aviso na migração: {e}")
 
+def _limpar_dados_gps_orfaos():
+    """Remove respostas, palpites e configs de GPs que não existem mais no banco."""
+    try:
+        slugs_existentes = {(gp.slug, gp.temporada_ano) for gp in GP.query.all()}
+        if not slugs_existentes:
+            return
+
+        slugs_gp = {s for s, _ in slugs_existentes}
+        removidos = 0
+
+        for resp in Resposta.query.all():
+            if (resp.gp_slug, resp.temporada_ano) not in slugs_existentes:
+                db.session.delete(resp)
+                removidos += 1
+
+        for resp in RespostaSprint.query.all():
+            if resp.gp_slug not in slugs_gp:
+                db.session.delete(resp)
+                removidos += 1
+
+        for palp in Palpite.query.all():
+            if (palp.gp_slug, palp.temporada_ano) not in slugs_existentes:
+                db.session.delete(palp)
+                removidos += 1
+
+        for palp in PalpiteSprint.query.all():
+            if palp.gp_slug not in slugs_gp:
+                db.session.delete(palp)
+                removidos += 1
+
+        for cfg in ConfigVotacao.query.all():
+            if cfg.gp_slug not in slugs_gp:
+                db.session.delete(cfg)
+                removidos += 1
+
+        if removidos > 0:
+            db.session.commit()
+            print(f"Limpeza: {removidos} registro(s) órfão(s) de GPs excluídos foram removidos.")
+        else:
+            print("Limpeza: nenhum dado órfão encontrado.")
+    except Exception as e:
+        db.session.rollback()
+        print(f"Aviso na limpeza de dados órfãos: {e}")
+
 def verificar_banco_existe():
     with app.app_context():
         # Cria as tabelas se não existirem
@@ -313,52 +357,6 @@ def _excluir_dados_gp(slug, temporada_ano):
     Palpite.query.filter_by(gp_slug=slug, temporada_ano=temporada_ano).delete()
     PalpiteSprint.query.filter_by(gp_slug=slug).delete()
     ConfigVotacao.query.filter_by(gp_slug=slug).delete()
-
-def _limpar_dados_gps_orfaos():
-    """Remove respostas, palpites e configs de GPs que não existem mais no banco."""
-    try:
-        slugs_existentes = {(gp.slug, gp.temporada_ano) for gp in GP.query.all()}
-        if not slugs_existentes:
-            return
-
-        removidos = 0
-
-        for resp in Resposta.query.all():
-            if (resp.gp_slug, resp.temporada_ano) not in slugs_existentes:
-                db.session.delete(resp)
-                removidos += 1
-
-        for resp in RespostaSprint.query.all():
-            slugs_gp = {s for s, _ in slugs_existentes}
-            if resp.gp_slug not in slugs_gp:
-                db.session.delete(resp)
-                removidos += 1
-
-        for palp in Palpite.query.all():
-            if (palp.gp_slug, palp.temporada_ano) not in slugs_existentes:
-                db.session.delete(palp)
-                removidos += 1
-
-        for palp in PalpiteSprint.query.all():
-            slugs_gp = {s for s, _ in slugs_existentes}
-            if palp.gp_slug not in slugs_gp:
-                db.session.delete(palp)
-                removidos += 1
-
-        for cfg in ConfigVotacao.query.all():
-            slugs_gp = {s for s, _ in slugs_existentes}
-            if cfg.gp_slug not in slugs_gp:
-                db.session.delete(cfg)
-                removidos += 1
-
-        if removidos > 0:
-            db.session.commit()
-            print(f"Limpeza: {removidos} registro(s) órfão(s) de GPs excluídos foram removidos.")
-        else:
-            print("Limpeza: nenhum dado órfão encontrado.")
-    except Exception as e:
-        db.session.rollback()
-        print(f"Aviso na limpeza de dados órfãos: {e}")
 
 @app.context_processor
 def inject_titulos_campeao():
