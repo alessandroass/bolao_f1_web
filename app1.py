@@ -240,14 +240,27 @@ def verificar_banco_existe():
         # Calendário é gerenciado em "Gerenciar Datas dos GPs" (sem lista fixa)
         sincronizar_gps_banco()
 
-# Lista dos pilotos da F1 2025
-grid_2025 = [
+        # Inicializa pilotos apenas se a tabela estiver vazia (seed)
+        if Piloto.query.count() == 0:
+            for nome in _PILOTOS_SEED_2025:
+                db.session.add(Piloto(nome=nome))
+            db.session.commit()
+            print("Pilotos iniciais (seed) inseridos no banco!")
+
+        # Limpa dados órfãos de GPs que foram excluídos no passado
+        _limpar_dados_gps_orfaos()
+
+_PILOTOS_SEED_2025 = [
     "Max Verstappen", "Yuki Tsunoda", "Kimi Antonelli", "George Russell",
     "Charles Leclerc", "Lewis Hamilton", "Lando Norris", "Oscar Piastri",
     "Fernando Alonso", "Lance Stroll", "Liam Lawson", "Isack Hadjar",
     "Pierre Gasly", "Franco Colapinto", "Niko Hulkenberg", "Gabriel Bortoleto",
     "Esteban Ocon", "Oliver Bearman", "Carlos Sainz", "Alexander Albon"
 ]
+
+def get_grid_pilotos():
+    """Retorna lista de nomes dos pilotos cadastrados no banco (fonte de verdade)."""
+    return [p.nome for p in Piloto.query.order_by(Piloto.nome).all()]
 
 # Verifica e inicializa o banco de dados
 verificar_banco_existe()
@@ -292,6 +305,60 @@ def ensure_campeoes_saved(temporada_id, top3_list):
         db.session.commit()
     except Exception:
         db.session.rollback()
+
+def _excluir_dados_gp(slug, temporada_ano):
+    """Remove todos os dados vinculados a um GP (respostas, palpites, config) antes de excluí-lo."""
+    Resposta.query.filter_by(gp_slug=slug, temporada_ano=temporada_ano).delete()
+    RespostaSprint.query.filter_by(gp_slug=slug).delete()
+    Palpite.query.filter_by(gp_slug=slug, temporada_ano=temporada_ano).delete()
+    PalpiteSprint.query.filter_by(gp_slug=slug).delete()
+    ConfigVotacao.query.filter_by(gp_slug=slug).delete()
+
+def _limpar_dados_gps_orfaos():
+    """Remove respostas, palpites e configs de GPs que não existem mais no banco."""
+    try:
+        slugs_existentes = {(gp.slug, gp.temporada_ano) for gp in GP.query.all()}
+        if not slugs_existentes:
+            return
+
+        removidos = 0
+
+        for resp in Resposta.query.all():
+            if (resp.gp_slug, resp.temporada_ano) not in slugs_existentes:
+                db.session.delete(resp)
+                removidos += 1
+
+        for resp in RespostaSprint.query.all():
+            slugs_gp = {s for s, _ in slugs_existentes}
+            if resp.gp_slug not in slugs_gp:
+                db.session.delete(resp)
+                removidos += 1
+
+        for palp in Palpite.query.all():
+            if (palp.gp_slug, palp.temporada_ano) not in slugs_existentes:
+                db.session.delete(palp)
+                removidos += 1
+
+        for palp in PalpiteSprint.query.all():
+            slugs_gp = {s for s, _ in slugs_existentes}
+            if palp.gp_slug not in slugs_gp:
+                db.session.delete(palp)
+                removidos += 1
+
+        for cfg in ConfigVotacao.query.all():
+            slugs_gp = {s for s, _ in slugs_existentes}
+            if cfg.gp_slug not in slugs_gp:
+                db.session.delete(cfg)
+                removidos += 1
+
+        if removidos > 0:
+            db.session.commit()
+            print(f"Limpeza: {removidos} registro(s) órfão(s) de GPs excluídos foram removidos.")
+        else:
+            print("Limpeza: nenhum dado órfão encontrado.")
+    except Exception as e:
+        db.session.rollback()
+        print(f"Aviso na limpeza de dados órfãos: {e}")
 
 @app.context_processor
 def inject_titulos_campeao():
@@ -723,7 +790,7 @@ def tela_palpite_gp(nome_gp):
                          hora_corrida=hora_corrida,
                          data_classificacao=data_classificacao,
                          hora_classificacao=hora_classificacao,
-                         grid_2025=grid_2025,
+                         grid_2025=get_grid_pilotos(),
                          palpite=palpite,
                          pole_habilitado=pole_habilitado,
                          posicoes_habilitado=posicoes_habilitado,
@@ -1167,7 +1234,7 @@ def admin_respostas(nome_gp):
             return render_template('admin_respostas.html',
                                 nome_gp=nome_gp,
                                 nome_gp_exibicao=nome_gp_exibicao,
-                                grid_2025=grid_2025,
+                                grid_2025=get_grid_pilotos(),
                                 resposta=resposta_temp,
                                 is_sprint=is_sprint,
                                 percentual_corrida=int(request.form.get('percentual_corrida', 100) or 100))
@@ -1178,7 +1245,7 @@ def admin_respostas(nome_gp):
             return render_template('admin_respostas.html',
                                 nome_gp=nome_gp,
                                 nome_gp_exibicao=nome_gp_exibicao,
-                                grid_2025=grid_2025,
+                                grid_2025=get_grid_pilotos(),
                                 resposta=resposta_temp,
                                 is_sprint=is_sprint,
                                 percentual_corrida=int(request.form.get('percentual_corrida', 100) or 100))
@@ -1228,7 +1295,7 @@ def admin_respostas(nome_gp):
         return render_template('admin_respostas.html',
                              nome_gp=nome_gp,
                              nome_gp_exibicao=nome_gp_exibicao,
-                             grid_2025=grid_2025,
+                             grid_2025=get_grid_pilotos(),
                              resposta=resposta_temp,
                              is_sprint=is_sprint,
                              percentual_corrida=percentual if percentual is not None else 100)
@@ -1245,7 +1312,7 @@ def admin_respostas(nome_gp):
     return render_template('admin_respostas.html',
                          nome_gp=nome_gp,
                          nome_gp_exibicao=nome_gp_exibicao,
-                         grid_2025=grid_2025,
+                         grid_2025=get_grid_pilotos(),
                          resposta=resposta,
                          is_sprint=is_sprint,
                          percentual_corrida=percentual_corrida)
@@ -1287,45 +1354,29 @@ def admin_gerenciar_pilotos():
         
         if novo_piloto:
             try:
-                # Verifica se o piloto já existe na lista grid_2025
-                if novo_piloto not in grid_2025:
-                    # Adiciona o piloto à lista grid_2025
-                    grid_2025.append(novo_piloto)
-                    # Adiciona o piloto ao banco de dados
-                    piloto = Piloto(nome=novo_piloto)
-                    db.session.add(piloto)
+                existente = Piloto.query.filter_by(nome=novo_piloto).first()
+                if not existente:
+                    db.session.add(Piloto(nome=novo_piloto))
                     db.session.commit()
                     flash('Piloto adicionado com sucesso!', 'success')
                 else:
                     flash('Este piloto já está cadastrado!', 'error')
             except Exception as e:
+                db.session.rollback()
                 flash(f'Erro ao adicionar piloto: {str(e)}', 'error')
         
         elif piloto:
             try:
-                # Remove o piloto da lista grid_2025
-                if piloto in grid_2025:
-                    grid_2025.remove(piloto)
-                # Remove o piloto do banco de dados
                 piloto_obj = Piloto.query.filter_by(nome=piloto).first()
                 if piloto_obj:
                     db.session.delete(piloto_obj)
                     db.session.commit()
                     flash('Piloto excluído com sucesso!', 'success')
             except Exception as e:
+                db.session.rollback()
                 flash(f'Erro ao excluir piloto: {str(e)}', 'error')
     
-    # Busca todos os pilotos do banco de dados
     pilotos = Piloto.query.order_by(Piloto.nome).all()
-    
-    # Garante que todos os pilotos da lista grid_2025 estejam no banco de dados
-    for piloto_nome in grid_2025:
-        piloto = Piloto.query.filter_by(nome=piloto_nome).first()
-        if not piloto:
-            piloto = Piloto(nome=piloto_nome)
-            db.session.add(piloto)
-    db.session.commit()
-    
     return render_template('admin_gerenciar_pilotos.html', pilotos=pilotos)
 
 @app.route('/admin/gerenciar-equipes', methods=['GET', 'POST'])
@@ -1893,6 +1944,7 @@ def admin_datas_gps():
                 gp_slug = request.form.get('gp_slug')
                 gp = GP.query.filter_by(slug=gp_slug).first()
                 if gp:
+                    _excluir_dados_gp(gp.slug, gp.temporada_ano)
                     db.session.delete(gp)
                     db.session.commit()
                     flash('GP excluído com sucesso. O calendário foi atualizado.', 'success')
@@ -2221,10 +2273,12 @@ def admin_gerenciar_gps():
                 try:
                     gp = GP.query.get(gp_id)
                     if gp:
+                        _excluir_dados_gp(gp.slug, gp.temporada_ano)
                         db.session.delete(gp)
                         db.session.commit()
                         flash('GP excluído com sucesso!', 'success')
                 except Exception as e:
+                    db.session.rollback()
                     flash(f'Erro ao excluir GP: {str(e)}', 'error')
     
     # Busca todos os GPs
@@ -2434,7 +2488,7 @@ def tela_palpite_sprint(nome_gp):
         hora_corrida=hora_corrida_str or "Hora não disponível",
         data_classificacao=dcl_str or "Data não disponível",
         hora_classificacao=hora_class_str or "Hora não disponível",
-        grid_2025=grid_2025,
+        grid_2025=get_grid_pilotos(),
         palpite=palpite,
         pole_habilitado=pole_habilitado,
         posicoes_habilitado=posicoes_habilitado,
