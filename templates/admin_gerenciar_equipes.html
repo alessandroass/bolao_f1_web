@@ -82,17 +82,16 @@
         <div class="equipes-lista">
             {% for equipe in equipes %}
             <div class="equipe-item">
-                <div class="equipe-header">
-                    <span class="equipe-nome">{{ equipe.nome }}</span>
-                    <form method="POST" class="form-excluir" onsubmit="return confirm('Tem certeza que deseja excluir esta equipe?');">
-                        <input type="hidden" name="action" value="excluir">
-                        <input type="hidden" name="equipe_id" value="{{ equipe.id }}">
-                        <button type="submit" class="btn-excluir">✕</button>
-                    </form>
-                </div>
                 <form method="POST" class="form-pilotos">
                     <input type="hidden" name="action" value="editar">
                     <input type="hidden" name="equipe_id" value="{{ equipe.id }}">
+                    <div class="equipe-header">
+                        <input type="text" name="nome_equipe" value="{{ equipe.nome }}" class="input-equipe-nome" required>
+                        <div class="equipe-header-actions">
+                            <button type="submit" class="btn-salvar">Salvar</button>
+                            <button type="button" class="btn-excluir" onclick="excluirEquipe({{ equipe.id }}, '{{ equipe.nome }}')">✕</button>
+                        </div>
+                    </div>
                     <div class="pilotos-row">
                         <div class="piloto-select">
                             <label>Piloto 1:</label>
@@ -116,8 +115,11 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        <button type="submit" class="btn-salvar">Salvar</button>
                     </div>
+                </form>
+                <form id="form-excluir-{{ equipe.id }}" method="POST" style="display:none;">
+                    <input type="hidden" name="action" value="excluir">
+                    <input type="hidden" name="equipe_id" value="{{ equipe.id }}">
                 </form>
             </div>
             {% endfor %}
@@ -328,17 +330,39 @@
     margin-bottom: 15px;
     padding-bottom: 10px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    gap: 10px;
 }
 
-.equipe-nome {
+.equipe-header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.input-equipe-nome {
     color: #FFD700;
     font-family: 'Orbitron', sans-serif;
     font-weight: bold;
-    font-size: 1.1em;
+    font-size: 1em;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    padding: 6px 10px;
+    flex: 1;
+    min-width: 0;
+    transition: all 0.3s;
 }
 
-.form-excluir {
-    display: inline;
+.input-equipe-nome:hover {
+    border-color: rgba(255, 215, 0, 0.3);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.input-equipe-nome:focus {
+    border-color: #FFD700;
+    background: rgba(0, 0, 0, 0.3);
+    outline: none;
 }
 
 .btn-excluir {
@@ -364,7 +388,7 @@
 
 .pilotos-row {
     display: grid;
-    grid-template-columns: 1fr 1fr auto;
+    grid-template-columns: 1fr 1fr;
     gap: 15px;
     align-items: end;
 }
@@ -439,15 +463,31 @@
         gap: 10px;
     }
 
-    .btn-salvar {
-        width: 100%;
-    }
-
     .equipe-header {
         flex-direction: column;
         gap: 10px;
+    }
+
+    .input-equipe-nome {
         text-align: center;
+    }
+
+    .equipe-header-actions {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .equipe-header-actions .btn-salvar {
+        flex: 1;
     }
 }
 </style>
+
+<script>
+function excluirEquipe(id, nome) {
+    if (confirm('Tem certeza que deseja excluir a equipe ' + nome + '?')) {
+        document.getElementById('form-excluir-' + id).submit();
+    }
+}
+</script>
 {% endblock %}

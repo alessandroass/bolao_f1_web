@@ -135,16 +135,15 @@ def inicializar_temporadas():
             if temp.ativa or not temp.arquivada:
                 temp.ativa = False
                 temp.arquivada = True
-                # Define data_fim se não tiver
                 if not temp.data_fim:
                     temp.data_fim = datetime(temp.ano, 12, 31)
-                
-                # Salva snapshot das equipes se ainda não existir
-                snapshot_existente = EquipeTemporada.query.filter_by(temporada_ano=temp.ano).first()
-                if not snapshot_existente:
-                    salvar_snapshot_equipes(temp.ano)
-                
                 print(f"Temporada {temp.ano} arquivada automaticamente")
+            
+            # Garante snapshot para TODAS as temporadas passadas (protege histórico)
+            snapshot_existente = EquipeTemporada.query.filter_by(temporada_ano=temp.ano).first()
+            if not snapshot_existente:
+                salvar_snapshot_equipes(temp.ano)
+                print(f"Snapshot das equipes criado para temporada {temp.ano}")
         
         # Cria temporadas intermediárias se não existirem (ex: se pular de 2025 para 2028)
         for ano in range(2026, ano_atual):
@@ -1411,16 +1410,23 @@ def admin_gerenciar_equipes():
         
         elif action == 'editar':
             equipe_id = request.form.get('equipe_id')
+            nome_equipe = request.form.get('nome_equipe', '').strip()
             piloto1_id = request.form.get('piloto1_id')
             piloto2_id = request.form.get('piloto2_id')
             
             try:
                 equipe = Equipe.query.get(equipe_id)
                 if equipe:
+                    if nome_equipe and nome_equipe != equipe.nome:
+                        existente = Equipe.query.filter(Equipe.nome == nome_equipe, Equipe.id != equipe.id).first()
+                        if existente:
+                            flash('Já existe outra equipe com esse nome!', 'error')
+                            return redirect(url_for('admin_gerenciar_equipes'))
+                        equipe.nome = nome_equipe
                     equipe.piloto1_id = int(piloto1_id) if piloto1_id else None
                     equipe.piloto2_id = int(piloto2_id) if piloto2_id else None
                     db.session.commit()
-                    flash('Pilotos da equipe atualizados com sucesso!', 'success')
+                    flash('Equipe atualizada com sucesso!', 'success')
             except Exception as e:
                 db.session.rollback()
                 flash(f'Erro ao atualizar equipe: {str(e)}', 'error')
